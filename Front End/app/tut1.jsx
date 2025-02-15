@@ -4,7 +4,6 @@ import ScreenWrapper from '../components/ScreenWrapper';
 import { StatusBar } from 'expo-status-bar';
 import { wp, hp } from '../helpers/common';
 import { theme } from '../constants/theme';
-import Button from '../components/Button';
 import { useRouter } from 'expo-router';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
@@ -28,12 +27,12 @@ const Tut1 = () => {
             Effortlessly Generate{'\n'}Your Perfect Itinerary
           </Text>
           <Text style={styles.paragraph}>
-            Design your dream trip in seconds! Trip{'\n'}Ceylon's AI powered tool creates{'\n'}
+            Design your dream trip in seconds! Trip{'\n'}Ceylon's AI-powered tool creates{'\n'}
             personalized itineraries tailored to your{'\n'}preferences and needs!
           </Text>
         </View>
 
-        {/* Navigation Shapes */}
+        {/* Navigation Dots */}
         <View style={styles.navContainer}>
           <Pressable
             style={[styles.navDot, styles.activeNavDot]}
@@ -55,21 +54,15 @@ const Tut1 = () => {
 
         {/* Footer */}
         <View style={styles.footer}>
-          <Pressable
-            style={[
-              styles.buttonStyle,
-              {
-                marginHorizontal: wp(3),
-                height: hp(4.7),
-                marginBottom: hp(1.5),
-                borderRadius: theme.radius.lg,
-              },
-            ]}
-            onPress={() => router.push('tut2')}
-          >
-            <Text style={styles.buttonText}>Next</Text>
-            <Icon name="arrow-forward" size={20} color="white" style={styles.icon} />
-          </Pressable>
+          <View style={styles.buttonContainer}>
+            <Pressable
+              style={styles.buttonStyle}
+              onPress={() => router.push('tut2')}
+            >
+              <Text style={styles.buttonText}>Next</Text>
+              <Icon name="arrow-forward" size={20} color="white" style={styles.icon} />
+            </Pressable>
+          </View>
           <Pressable onPress={() => router.push('tut4')}>
             <Text style={styles.skipTut}>Skip Tutorial</Text>
           </Pressable>
@@ -118,7 +111,6 @@ const styles = StyleSheet.create({
     fontWeight: theme.fonts.medium,
     lineHeight: hp(2.5),
     marginTop: hp(2),
-    marginLeft: 0,
   },
 
   navContainer: {
@@ -137,12 +129,41 @@ const styles = StyleSheet.create({
   },
 
   activeNavDot: {
-    backgroundColor: theme.colors.buttonGreen, // Replace with your active color
+    backgroundColor: theme.colors.buttonGreen,
   },
 
   footer: {
     width: '60%',
-    marginTop: -hp(5),
+    alignItems: 'center',
+    marginBottom: hp(3), // Adds margin to the footer section
+  },
+
+  buttonContainer: {
+    width: '100%', // Ensures full width for the button
+    alignItems: 'center',
+  },
+
+  buttonStyle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: theme.colors.buttonGreen,
+    borderRadius: theme.radius.lg,
+    paddingVertical: hp(1),
+    paddingHorizontal: wp(5),
+    marginBottom: hp(1.5),
+    width: '80%', // Adjust the width of the button
+  },
+
+  buttonText: {
+    color: 'white',
+    fontSize: hp(2),
+    fontWeight: theme.fonts.semibold,
+    marginRight: wp(2),
+  },
+
+  icon: {
+    marginLeft: wp(1),
   },
 
   skipTut: {
@@ -152,26 +173,5 @@ const styles = StyleSheet.create({
     fontSize: hp(2),
     textDecorationLine: 'underline',
     fontWeight: theme.fonts.semibold,
-  },
-
-  buttonStyle: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: theme.colors.buttonGreen, // Replace with your button background color
-    borderRadius: 5,
-    paddingVertical: hp(1),
-    paddingHorizontal: wp(5),
-  },
-
-  buttonText: {
-    color: 'white',
-    fontSize: hp(2),
-    fontWeight: theme.fonts.semibold,
-    marginRight: wp(2), // Add margin to separate text from the icon
-  },
-
-  icon: {
-    marginLeft: wp(1),
   },
 });
