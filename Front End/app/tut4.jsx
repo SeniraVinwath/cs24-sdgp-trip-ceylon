@@ -4,7 +4,6 @@ import ScreenWrapper from '../components/ScreenWrapper';
 import { StatusBar } from 'expo-status-bar';
 import { wp, hp } from '../helpers/common';
 import { theme } from '../constants/theme';
-import Button from '../components/Button';
 import { useRouter } from 'expo-router';
 
 const Tut4 = () => {
@@ -56,11 +55,11 @@ const Tut4 = () => {
         <View style={styles.footer}>
           <Pressable
             style={[styles.buttonStyle]}
-            onPress={() => router.push('')}
+            onPress={() => router.push('signUp')}
           >
             <Text style={styles.buttonText}>Register Now</Text>
           </Pressable>
-          <Pressable onPress={() => router.push('tut4')}>
+          <Pressable onPress={() => router.push('login')}>
             <Text style={styles.login}>Use an existing Account</Text>
           </Pressable>
         </View>
@@ -75,7 +74,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     alignItems: 'center',
-    justifyContent: 'space-around',
+    justifyContent: 'flex-start',
     backgroundColor: theme.colors.themebg,
     paddingHorizontal: wp(3),
   },
@@ -90,7 +89,7 @@ const styles = StyleSheet.create({
     width: '100%',
     alignItems: 'flex-start',
     paddingHorizontal: wp(5),
-    marginBottom: hp(10),
+    marginBottom: hp(5), // Reduced so nav dots move down
   },
 
   title: {
@@ -115,7 +114,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: hp(3.5), // Moved up slightly
+    marginTop: hp(4), // Increased to bring dots down a little more
   },
 
   navDot: {
@@ -131,14 +130,14 @@ const styles = StyleSheet.create({
   },
 
   footer: {
-    width: '70%', // Wider
-    marginTop: -hp(5), // Moved up
+    width: '70%',
+    marginTop: hp(5), // Kept buttons in the same place
   },
 
   login: {
     textAlign: 'center',
     color: theme.colors.linkGreen,
-    marginTop: hp(1),
+    marginTop: hp(2.5), // Increased space between button and link
     fontSize: hp(2),
     textDecorationLine: 'underline',
     fontWeight: theme.fonts.semibold,
@@ -149,14 +148,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: theme.colors.buttonGreen,
-    borderRadius: 8, // More rounded
-    paddingVertical: hp(1.5), // Increased height
+    borderRadius: 8,
+    paddingVertical: hp(1.5),
     paddingHorizontal: wp(5),
   },
 
   buttonText: {
     color: 'white',
-    fontSize: hp(2.5), // Larger text
+    fontSize: hp(2.5),
     fontWeight: theme.fonts.semibold,
     marginRight: wp(2),
   },

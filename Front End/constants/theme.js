@@ -5,6 +5,7 @@ export const theme = {
       textWhite: '#FFFFFF',
       themebg: '#303030',
       shadowcolor: '#E2E8F0',
+      forgotpasswordlink: '#3C9AFB',
     },
   
     fonts: {

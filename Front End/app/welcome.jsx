@@ -37,15 +37,15 @@ const Welcome = () => {
         {/* footer */}
         <View style={styles.footer}>
           <Button
-          title='GET STARTED'
-          buttonStyle={{marginHorizontal: wp(3)}}
-          onPress={()=> router.push('tut1')}
+            title='GET STARTED'
+            buttonStyle={{ marginHorizontal: wp(3), marginBottom: hp(2) }} // Added bottom margin
+            onPress={() => router.push('tut1')}
           />
-        <Pressable onPress={()=> router.push('tut4')}>
-              <Text style={[styles.skipTut, {color: theme.colors.linkGreen, fontWeight : theme.fonts.semibold}]}>
-                Skip Tutorial
-              </Text>
-            </Pressable>
+          <Pressable onPress={() => router.push('tut4')}>
+            <Text style={[styles.skipTut, { color: theme.colors.linkGreen, fontWeight: theme.fonts.semibold }]}>
+              Skip Tutorial
+            </Text>
+          </Pressable>
         </View>
       </View>
     </ScreenWrapper>
@@ -86,7 +86,7 @@ const styles = StyleSheet.create({
 
   footer: {
     width: '60%',
-    marginTop: - hp(5),
+    marginTop: -hp(5),
   },
 
   skipTut: {

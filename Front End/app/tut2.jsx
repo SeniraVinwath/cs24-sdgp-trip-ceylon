@@ -4,7 +4,6 @@ import ScreenWrapper from '../components/ScreenWrapper';
 import { StatusBar } from 'expo-status-bar';
 import { wp, hp } from '../helpers/common';
 import { theme } from '../constants/theme';
-import Button from '../components/Button';
 import { useRouter } from 'expo-router';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
@@ -29,11 +28,11 @@ const Tut2 = () => {
           </Text>
           <Text style={styles.paragraph}>
             Travel worry free with Trip Ceylon! Our{'\n'}luggage tracking feature ensures your{'\n'}
-            belongings are secure, giving you{'\n'}peace of mind!
+            personalized itineraries tailored to your{'\n'}preferences and needs!
           </Text>
         </View>
 
-        {/* Navigation Shapes */}
+        {/* Navigation Dots */}
         <View style={styles.navContainer}>
           <Pressable
             style={styles.navDot}
@@ -55,21 +54,15 @@ const Tut2 = () => {
 
         {/* Footer */}
         <View style={styles.footer}>
-          <Pressable
-            style={[
-              styles.buttonStyle,
-              {
-                marginHorizontal: wp(3),
-                height: hp(4.7),
-                marginBottom: hp(1.5),
-                borderRadius: theme.radius.lg,
-              },
-            ]}
-            onPress={() => router.push('tut3')}
-          >
-            <Text style={styles.buttonText}>Next</Text>
-            <Icon name="arrow-forward" size={20} color="white" style={styles.icon} />
-          </Pressable>
+          <View style={styles.buttonContainer}>
+            <Pressable
+              style={styles.buttonStyle}
+              onPress={() => router.push('tut3')}
+            >
+              <Text style={styles.buttonText}>Next</Text>
+              <Icon name="arrow-forward" size={20} color="white" style={styles.icon} />
+            </Pressable>
+          </View>
           <Pressable onPress={() => router.push('tut4')}>
             <Text style={styles.skipTut}>Skip Tutorial</Text>
           </Pressable>
@@ -118,7 +111,6 @@ const styles = StyleSheet.create({
     fontWeight: theme.fonts.medium,
     lineHeight: hp(2.5),
     marginTop: hp(2),
-    marginLeft: 0,
   },
 
   navContainer: {
@@ -142,16 +134,13 @@ const styles = StyleSheet.create({
 
   footer: {
     width: '60%',
-    marginTop: -hp(5),
+    alignItems: 'center',
+    marginBottom: hp(3),
   },
 
-  skipTut: {
-    textAlign: 'center',
-    color: theme.colors.linkGreen,
-    marginTop: hp(1),
-    fontSize: hp(2),
-    textDecorationLine: 'underline',
-    fontWeight: theme.fonts.semibold,
+  buttonContainer: {
+    width: '100%',
+    alignItems: 'center',
   },
 
   buttonStyle: {
@@ -159,9 +148,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: theme.colors.buttonGreen,
-    borderRadius: 5,
+    borderRadius: theme.radius.lg,
     paddingVertical: hp(1),
     paddingHorizontal: wp(5),
+    marginBottom: hp(1.5),
+    width: '80%',
   },
 
   buttonText: {
@@ -173,5 +164,14 @@ const styles = StyleSheet.create({
 
   icon: {
     marginLeft: wp(1),
+  },
+
+  skipTut: {
+    textAlign: 'center',
+    color: theme.colors.linkGreen,
+    marginTop: hp(1),
+    fontSize: hp(2),
+    textDecorationLine: 'underline',
+    fontWeight: theme.fonts.semibold,
   },
 });
