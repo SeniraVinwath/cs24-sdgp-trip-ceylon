@@ -10,6 +10,9 @@ import ViewTrue from './Viewture'
 import ViewFalse from './Viewfalse'
 import Calendar from './Calendar'
 import Contact from './Contact'
+import Language from './Language'
+import ArrowRight from './ArrowRight'
+import GlobalSearch from './GlobalSearch'
 
 const icons = {
     home: Home,
@@ -21,6 +24,10 @@ const icons = {
     viewFalse: ViewFalse,
     calendar: Calendar,
     contact: Contact,
+    language: Language,
+    arrowRight: ArrowRight,
+    globalSearch: GlobalSearch,
+    
 }
 
 const Icon = ({name, ...props}) => {
