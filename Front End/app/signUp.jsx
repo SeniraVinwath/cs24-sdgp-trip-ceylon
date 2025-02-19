@@ -1,5 +1,5 @@
-import { StyleSheet, Text, View, Image, Alert, ScrollView, KeyboardAvoidingView, Platform, Pressable} from 'react-native';
-import React, { useRef, useState } from 'react';
+import { StyleSheet, Text, View, Image, Alert, ScrollView, KeyboardAvoidingView, Platform, Pressable, Modal, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect } from 'react';
 import ScreenWrapper from '../components/ScreenWrapper';
 import { theme } from '../constants/theme';
 import Icon from '../assets/icons';
@@ -10,221 +10,698 @@ import { wp, hp } from '../helpers/common';
 import Input from '../components/Input';
 import Button from '../components/Button';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import isValidPhoneNumber from 'libphonenumber-js';
+import { parsePhoneNumber, getCountries, getCountryCallingCode } from 'libphonenumber-js';
+import { Picker } from '@react-native-picker/picker';
+import Flag from 'react-native-flags';
+import { LANGUAGES, COUNTRIES, getFormattedCountryCodes } from '../constants/info';
 
 const isValidEmail = (email) => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return emailRegex.test(email);
 };
 
+const isValidUsername = (username) => {
+  const usernameRegex = /^[a-zA-Z0-9_]+$/;
+  return usernameRegex.test(username);
+};
+
+const isValidFullName = (fullName) => {
+  const nameParts = fullName.trim().split(/\s+/);
+  return nameParts.length >= 2 && nameParts.length <= 4;
+};
+
+const isPasswordValid = (password) => {
+  return password.length >= 8;
+};
+
 const Signup = () => {
   const router = useRouter();
-  const userNameRef = useRef();
-  const fullNameRef = useRef();
-  const passwordRef = useRef();
-  const confirmPasswordRef = useRef();
+  
+  const [userName, setUserName] = useState('');
+  const [userNameError, setUserNameError] = useState('');
+  const [fullName, setFullName] = useState('');
+  const [fullNameError, setFullNameError] = useState('');
+  const [email, setEmail] = useState('');
+  const [emailError, setEmailError] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [emergencyPhoneNumber, setEmergencyPhoneNumber] = useState('');
+  const [countryCode, setCountryCode] = useState('');
+  const [emergencyCountryCode, setEmergencyCountryCode] = useState('');
+  const [selectedLanguage, setSelectedLanguage] = useState('');
+  const [showLanguageModal, setShowLanguageModal] = useState(false);
+  const [countryList, setCountryList] = useState([]);
+  const [selectedCountry, setSelectedCountry] = useState('');
+  const [showCountryModal, setShowCountryModal] = useState(false);
+  
+  useEffect(() => {
+    const countries = getCountries();
+    const formattedCountries = getFormattedCountryCodes(countries, getCountryCallingCode);
+    setCountryList(formattedCountries);
+    
+    if (formattedCountries.length > 0) {
+      setCountryCode(formattedCountries[0].value);
+      setEmergencyCountryCode(formattedCountries[0].value);
+    }
+  }, []);
   
   const [loading, setLoading] = useState(false);
   const [passwordVisible, setPasswordVisible] = useState(false);
-  const [selectedDate, setSelectedDate] = useState('');
+  const [selectedDate, setSelectedDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [displayDate, setDisplayDate] = useState('');
   const [isPhoneValid, setIsPhoneValid] = useState(true);
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [email, setEmail] = useState('');
+  const [isEmergencyPhoneValid, setIsEmergencyPhoneValid] = useState(true);
 
   const togglePasswordVisibility = () => {
     setPasswordVisible(!passwordVisible);
   };
 
-  const onSubmit = async () => {
-    if (!userNameRef.current || !fullNameRef.current || !email || !passwordRef.current || !confirmPasswordRef.current || !selectedDate || !phoneNumber) {
-      Alert.alert('Signup', 'Please fill all the fields!');
-      return;
+  const handleUsernameChange = (value) => {
+    setUserName(value);
+    if (value && !isValidUsername(value)) {
+      setUserNameError('Username can only contain letters, numbers, and underscores');
+    } else {
+      setUserNameError('');
     }
-  
-    if (!isValidEmail(email)) {
-      Alert.alert('Signup', 'Please enter a valid email address!');
-      return;
+  };
+
+  const handleFullNameChange = (value) => {
+    setFullName(value);
+    if (value && !isValidFullName(value)) {
+      setFullNameError('Full name must contain 2-4 parts separated by spaces');
+    } else {
+      setFullNameError('');
     }
-  
-    if (!isValidPhoneNumber(phoneNumber)) { 
-      Alert.alert('Signup', 'Please enter a valid phone number!');
-      return;
+  };
+
+  const handleEmailChange = (value) => {
+    setEmail(value);
+    if (value && !isValidEmail(value)) {
+      setEmailError('Please enter a valid email address');
+    } else {
+      setEmailError('');
+    }
+  };
+
+  const handlePhoneChange = (value) => {
+    setPhoneNumber(value);
+    try {
+      const phoneNumberWithCode = countryCode + value;
+      const parsedNumber = parsePhoneNumber(phoneNumberWithCode);
+      setIsPhoneValid(parsedNumber.isValid());
+    } catch (error) {
+      setIsPhoneValid(false);
+    }
+  };
+
+  const handleEmergencyPhoneChange = (value) => {
+    setEmergencyPhoneNumber(value);
+    try {
+      const phoneNumberWithCode = emergencyCountryCode + value;
+      const parsedNumber = parsePhoneNumber(phoneNumberWithCode);
+      setIsEmergencyPhoneValid(parsedNumber.isValid());
+    } catch (error) {
+      setIsEmergencyPhoneValid(false);
     }
   };
 
   const handleConfirmDate = (event, date) => {
     if (date) {
-      setSelectedDate(date.toLocaleDateString()); 
+      setSelectedDate(date);
+      setDisplayDate(date.toLocaleDateString());
     }
     setShowDatePicker(false);
   };
 
-  const handlePhoneChange = (value) => {
-    setPhoneNumber(value);
-    setIsPhoneValid(isValidPhoneNumber(value));
+  const handleLanguageSelect = (value) => {
+    setSelectedLanguage(value);
+    setShowLanguageModal(false);
   };
 
-  return (
-      <ScreenWrapper bg="#303030">
-          <StatusBar style="dark" />
-          <KeyboardAvoidingView 
-              behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-              keyboardVerticalOffset={hp(-5)}
-              style={styles.container}
+  const handleCountrySelect = (value) => {
+    setSelectedCountry(value);
+    setShowCountryModal(false);
+  };
+
+  // check if email exists API call
+  const checkIfEmailExists = async (email) => {
+    // Simulate API call delay
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    // assumed that these emails are already registered
+    const existingEmails = ['test@example.com', 'user@domain.com', 'admin@site.org'];
+    return existingEmails.includes(email.toLowerCase());
+  };
+
+  const validateForm = async () => {
+    let isValid = true;
+    
+    if (!userName) {
+      setUserNameError('Username is required');
+      isValid = false;
+    } else if (!isValidUsername(userName)) {
+      setUserNameError('Username can only contain letters, numbers, and underscores');
+      isValid = false;
+    } else {
+      setUserNameError('');
+    }
+
+    if (!fullName) {
+      setFullNameError('Full name is required');
+      isValid = false;
+    } else if (!isValidFullName(fullName)) {
+      setFullNameError('Full name must contain 2-4 parts separated by spaces');
+      isValid = false;
+    } else {
+      setFullNameError('');
+    }
+
+    if (!email) {
+      setEmailError('Email is required');
+      isValid = false;
+    } else if (!isValidEmail(email)) {
+      setEmailError('Please enter a valid email address');
+      isValid = false;
+    } else {
+
+      try {
+        const emailExists = await checkIfEmailExists(email);
+        if (emailExists) {
+          setEmailError('This email is already registered');
+          isValid = false;
+        } else {
+          setEmailError('');
+        }
+      } catch (error) {
+        setEmailError('Unable to verify email availability');
+        isValid = false;
+      }
+    }
+
+    if (!password) {
+      Alert.alert('Signup', 'Please enter a password!');
+      isValid = false;
+    } else if (!isPasswordValid(password)) {
+      Alert.alert('Signup', 'Password must be at least 8 characters long!');
+      isValid = false;
+    }
+
+    if (!confirmPassword) {
+      Alert.alert('Signup', 'Please confirm your password!');
+      isValid = false;
+    } else if (password !== confirmPassword) {
+      Alert.alert('Signup', 'Passwords do not match!');
+      isValid = false;
+    }
+
+    if (!displayDate) {
+      Alert.alert('Signup', 'Please select your date of birth!');
+      isValid = false;
+    }
+
+    if (!phoneNumber) {
+      Alert.alert('Signup', 'Please enter your phone number!');
+      isValid = false;
+    } else if (!isPhoneValid) {
+      Alert.alert('Signup', 'Please enter a valid phone number!');
+      isValid = false;
+    }
+
+    if (!emergencyPhoneNumber) {
+      Alert.alert('Signup', 'Please enter an emergency contact number!');
+      isValid = false;
+    } else if (!isEmergencyPhoneValid) {
+      Alert.alert('Signup', 'Please enter a valid emergency contact number!');
+      isValid = false;
+    }
+
+    if (!selectedLanguage) {
+      Alert.alert('Signup', 'Please select your preferred language!');
+      isValid = false;
+    }
+
+    if (!selectedCountry) {
+      Alert.alert('Signup', 'Please select your country!');
+      isValid = false;
+    }
+
+    return isValid;
+  };
+
+  const onSubmit = async () => {
+    const isFormValid = await validateForm();
+    if (!isFormValid) return;
+
+    try {
+      setLoading(true);
+      
+      // API call to register the user
+      // For now, just show a success message
+      
+      Alert.alert('Success', 'Account created successfully!');
+      router.push('/login');
+    } catch (error) {
+      Alert.alert('Error', error.message || 'Something went wrong!');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const CountryCodePicker = ({ selectedValue, onValueChange }) => (
+    <Picker
+      selectedValue={selectedValue}
+      style={{ 
+        width: 80,
+        height: '100%',
+        opacity: 0,
+        position: 'absolute',
+        left: 0,
+        top: 0
+      }}
+      onValueChange={onValueChange}
+    >
+      {countryList.map(({ value, label }) => (
+        <Picker.Item 
+          key={value}
+          label={label}
+          value={value}
+        />
+      ))}
+    </Picker>
+  );
+
+  const LanguageModal = () => (
+    <Modal
+      visible={showLanguageModal}
+      transparent
+      animationType="fade"
+      onRequestClose={() => setShowLanguageModal(false)}
+    >
+      <TouchableOpacity 
+        style={styles.modalOverlay}
+        activeOpacity={1}
+        onPress={() => setShowLanguageModal(false)}
+      >
+        <View style={styles.modalContent}>
+          <Text style={styles.modalTitle}>Select Language</Text>
+          <ScrollView 
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.modalScrollContent}
           >
-              <BackButton router={router} />
-
-              <ScrollView 
-                  contentContainerStyle={styles.scrollContent} 
-                  showsVerticalScrollIndicator={false}
+            {LANGUAGES.map(({ value, label }) => (
+              <TouchableOpacity
+                key={value}
+                style={[
+                  styles.languageOption,
+                  selectedLanguage === value && styles.selectedLanguageOption
+                ]}
+                onPress={() => handleLanguageSelect(value)}
               >
-                  <Image
-                      style={styles.iconImage}
-                      resizeMode="contain"
-                      source={require('../assets/images/WHITE ICON.png')}
+                <Text style={[
+                  styles.languageOptionText,
+                  selectedLanguage === value && styles.selectedLanguageOptionText
+                ]}>
+                  {label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+      </TouchableOpacity>
+    </Modal>
+  );
+
+  const CountryModal = () => (
+    <Modal
+      visible={showCountryModal}
+      transparent
+      animationType="fade"
+      onRequestClose={() => setShowCountryModal(false)}
+    >
+      <TouchableOpacity 
+        style={styles.modalOverlay}
+        activeOpacity={1}
+        onPress={() => setShowCountryModal(false)}
+      >
+        <View style={styles.modalContent}>
+          <Text style={styles.modalTitle}>Select Country</Text>
+          <ScrollView 
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.modalScrollContent}
+          >
+            {COUNTRIES.map(({ value, label }) => (
+              <TouchableOpacity
+                key={value}
+                style={[
+                  styles.countryOption,
+                  selectedCountry === value && styles.selectedCountryOption
+                ]}
+                onPress={() => handleCountrySelect(value)}
+              >
+                <Flag
+                  code={value}
+                  size={24}
+                  type="flat"
+                />
+                <Text style={[
+                  styles.countryOptionText,
+                  selectedCountry === value && styles.selectedCountryOptionText
+                ]}>
+                  {label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+      </TouchableOpacity>
+    </Modal>
+  );
+
+  return (
+    <ScreenWrapper bg="#303030">
+      <StatusBar style="dark" />
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={hp(-5)}
+        style={styles.container}
+      >
+        <BackButton router={router} />
+
+        <ScrollView 
+          contentContainerStyle={styles.scrollContent} 
+          showsVerticalScrollIndicator={false}
+        >
+          <Image
+            style={styles.iconImage}
+            resizeMode="contain"
+            source={require('../assets/images/WHITE ICON.png')}
+          />
+
+          <Text style={styles.welcomeText}>JOIN TRIP CEYLON DISCOVER MORE!</Text>
+
+          <View style={styles.form}>
+            <Text style={styles.label}>User Name</Text>
+            <Input
+              icon={<Icon name="user" size={26} strokeWidth={1.6} />}
+              placeholder='Enter a preferred User Name'
+              value={userName}
+              onChangeText={handleUsernameChange}
+            />
+            {userNameError ? <Text style={styles.errorText}>{userNameError}</Text> : null}
+
+            <Text style={styles.label}>Full Name</Text>
+            <Input
+              icon={<Icon name="user" size={26} strokeWidth={1.6} />}
+              placeholder='Enter your Full Name (First Last)'
+              value={fullName}
+              onChangeText={handleFullNameChange}
+            />
+            {fullNameError ? <Text style={styles.errorText}>{fullNameError}</Text> : null}
+
+            <Text style={styles.label}>E-mail</Text>
+            <Input
+              icon={<Icon name="mail" size={26} strokeWidth={1.6} />}
+              placeholder="Enter your Email"
+              value={email}
+              onChangeText={handleEmailChange}
+              keyboardType="email-address"
+              autoCapitalize="none"
+            />
+            {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
+
+            <Text style={styles.label}>Password</Text>
+            <Input
+              icon={<Icon name="lock" size={26} strokeWidth={1.6} />}
+              placeholder="Password Must Contain 8 Chars"
+              value={password}
+              secureTextEntry={!passwordVisible}
+              onChangeText={setPassword}
+              rightIcon={<Icon name={passwordVisible ? "viewTrue" : "viewFalse"} size={26} color="#475569" />}
+              onRightIconPress={togglePasswordVisibility}
+            />
+
+            <Text style={styles.label}>Confirm Password</Text>
+            <Input
+              icon={<Icon name="lock" size={26} strokeWidth={1.6} />}
+              placeholder="Re-Enter Your Password"
+              value={confirmPassword}
+              secureTextEntry={!passwordVisible}
+              onChangeText={setConfirmPassword}
+              rightIcon={<Icon name={passwordVisible ? "viewTrue" : "viewFalse"} size={26} color="#475569" />}
+              onRightIconPress={togglePasswordVisibility}
+            />
+
+            <Text style={styles.label}>Date of Birth</Text>
+            <Input
+              icon={<Icon name="calendar" size={26} strokeWidth={1.6} />}
+              placeholder='Select a Date'
+              value={displayDate}
+              onFocus={() => setShowDatePicker(true)}
+            />
+            {showDatePicker && (
+              <DateTimePicker
+                value={selectedDate}
+                mode="date"
+                display="default"
+                onChange={handleConfirmDate}
+                maximumDate={new Date()}
+              />
+            )}
+
+            <Text style={styles.label}>Phone Number</Text>
+            <Input
+              icon={<Icon name="contact" size={26} strokeWidth={1.6} />}
+              placeholder="Enter Your Phone Number"
+              keyboardType="phone-pad"
+              value={phoneNumber}
+              onChangeText={handlePhoneChange}
+              picker={<CountryCodePicker 
+                selectedValue={countryCode}
+                onValueChange={setCountryCode}
+              />}
+              selectedValue={countryCode}
+            />
+            {!isPhoneValid && phoneNumber.length > 0 && (
+              <Text style={styles.errorText}>Invalid phone number</Text>
+            )}
+
+            <Text style={styles.label}>Emergency Contact Number</Text>
+            <Input
+              icon={<Icon name="contact" size={26} strokeWidth={1.6} />}
+              placeholder="Emergency Contact"
+              keyboardType="phone-pad"
+              value={emergencyPhoneNumber}
+              onChangeText={handleEmergencyPhoneChange}
+              picker={<CountryCodePicker 
+                selectedValue={emergencyCountryCode}
+                onValueChange={setEmergencyCountryCode}
+              />}
+              selectedValue={emergencyCountryCode}
+            />
+            {!isEmergencyPhoneValid && emergencyPhoneNumber.length > 0 && (
+              <Text style={styles.errorText}>Invalid emergency contact number</Text>
+            )}
+
+            <Text style={styles.label}>Select your language spoken</Text>
+            <TouchableOpacity 
+              onPress={() => setShowLanguageModal(true)}
+              activeOpacity={0.7}
+            >
+              <View style={styles.inputStyle}>
+                <Icon name="language" size={26} strokeWidth={1.6} color="#475569" />
+                <Text style={[
+                  styles.placeholderText,
+                  selectedLanguage && styles.selectedValueText
+                ]}>
+                  {LANGUAGES.find(lang => lang.value === selectedLanguage)?.label || 'Select language'}
+                </Text>
+                <Icon name="arrowRight" size={20} strokeWidth={1.6} color="#475569" />
+              </View>
+            </TouchableOpacity>
+
+            <LanguageModal />
+
+            <Text style={styles.label}>Select your country</Text>
+            <TouchableOpacity 
+              onPress={() => setShowCountryModal(true)}
+              activeOpacity={0.7}
+            >
+              <View style={styles.inputStyle}>
+                <Icon name="globalSearch" size={26} strokeWidth={1.6} color="#475569" />
+                {selectedCountry && (
+                  <Flag
+                    code={selectedCountry}
+                    size={24}
+                    type="flat"
+                    style={styles.selectedFlag}
                   />
+                )}
+                <Text style={[
+                  styles.placeholderText,
+                  selectedCountry && styles.selectedValueText
+                ]}>
+                  {COUNTRIES.find(country => country.value === selectedCountry)?.label || 'Select country'}
+                </Text>
+                <Icon name="arrowRight" size={20} strokeWidth={1.6} color="#475569" />
+              </View>
+            </TouchableOpacity>
+            
+            <CountryModal />
+          </View>
 
-                  <Text style={styles.welcomeText}>JOIN TRIP CEYLON DISCOVER MORE!</Text>
+          <View style={styles.createButtonContainer}>
+            <Button 
+              title={'CREATE ACCOUNT'} 
+              loading={loading} 
+              onPress={onSubmit} 
+            />
+          </View>
 
-                  <View style={styles.form}>
-                      <Text style={styles.label}>User Name</Text>
-                      <Input
-                          icon={<Icon name="user" size={26} strokeWidth={1.6} />}
-                          placeholder='Enter a preferred User Name'
-                          onChangeText={value => userNameRef.current = value}
-                      />
-
-                      <Text style={styles.label}>Full Name</Text>
-                      <Input
-                          icon={<Icon name="user" size={26} strokeWidth={1.6} />}
-                          placeholder='Enter your Full Name'
-                          onChangeText={value => fullNameRef.current = value}
-                      />
-
-                      <Text style={styles.label}>Email</Text>
-                      <Input
-                      icon={<Icon name="mail" size={26} strokeWidth={1.6} />}
-                      placeholder="Enter your Email"
-                      onChangeText={(value) => setEmail(value)}
-                      />
-
-                      <Text style={styles.label}>Password</Text>
-                      <Input
-                        icon={<Icon name="lock" size={26} strokeWidth={1.6} />}
-                        placeholder="Password Must Contain 8 Chars"
-                        secureTextEntry={!passwordVisible}
-                        onChangeText={value => passwordRef.current = value}
-                        rightIcon={<Icon name={passwordVisible ? "viewTrue" : "viewFalse"} size={26} color="#475569" />}
-                        onRightIconPress={togglePasswordVisibility}
-                      />
-
-                      <Text style={styles.label}>Confirm Password</Text>
-                      <Input
-                          icon={<Icon name="lock" size={26} strokeWidth={1.6} />}
-                          placeholder="Re-Enter Your Password"
-                          secureTextEntry={!passwordVisible}
-                          onChangeText={value => confirmPasswordRef.current = value}
-                          rightIcon={<Icon name={passwordVisible ? "viewTrue" : "viewFalse"} size={26} color="#475569" />}
-                          onRightIconPress={togglePasswordVisibility}
-                      />
-
-                      <Text style={styles.label}>Phone Number</Text>
-                      <Input
-                          icon={<Icon name="contact" size={26} strokeWidth={1.6} />}
-                          placeholder='Enter Your Phone Number'
-                          keyboardType="phone-pad"
-                          value={phoneNumber}
-                          onChangeText={handlePhoneChange}
-                      />
-                      {!isPhoneValid && <Text style={{ color: 'red' }}>Invalid phone number</Text>}
-
-                      <Text style={styles.label}>Date of Birth</Text>
-                      <Input
-                        icon={<Icon name="calendar" size={26} strokeWidth={1.6} />}
-                        placeholder='Select a Date'
-                        value={selectedDate}
-                        onFocus={() => setShowDatePicker(true)}
-                      />
-
-                      {showDatePicker && (
-                        <DateTimePicker
-                          value={new Date()}
-                          mode="date"
-                          display="default"
-                          onChange={handleConfirmDate}
-                        />
-                      )}
-                  </View>
-
-                  <View style={styles.createButtonContainer}>
-                    <Button title={'CREATE ACCOUNT'} loading={loading} onPress={onSubmit} />
-                  </View>
-
-                  <Text style={styles.footerText}>
-                    BY CONTINUING, YOU AGREE TO TRIP CEYLON'S{''}
-                    <Pressable>
-                      <Text style={[styles.linkText]}>TERMS OF SERVICE</Text>
-                    </Pressable>
-                  </Text>
-              </ScrollView>
-          </KeyboardAvoidingView>
-      </ScreenWrapper>
+          <Text style={styles.footerText}>
+            BY CONTINUING, YOU AGREE TO TRIP CEYLON'S{' '}
+            <Pressable>
+              <Text style={styles.linkText}>TERMS OF SERVICE</Text>
+            </Pressable>
+          </Text>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </ScreenWrapper>
   );
 };
 
-export default Signup;
-
 const styles = StyleSheet.create({
   container: {
-      flex: 1,
-      paddingHorizontal: wp(5),
+    flex: 1,
+    paddingHorizontal: wp(5),
   },
-
   scrollContent: {
-      flexGrow: 1,
-      justifyContent: 'center',
-      paddingBottom: hp(5),
+    flexGrow: 1,
+    justifyContent: 'center',
+    paddingBottom: hp(5),
   },
-
   welcomeText: {
-      fontSize: hp(3.8),
-      fontWeight: theme.fonts.bold,
-      color: theme.colors.textWhite,
-      textAlign: 'center',
-      marginBottom: hp(4),
+    fontSize: hp(3.8),
+    fontWeight: theme.fonts.bold,
+    color: theme.colors.textWhite,
+    textAlign: 'center',
+    marginBottom: hp(4),
   },
-
   iconImage: {
-      height: hp(13),
-      alignSelf: 'center',
-      marginBottom: hp(4)
+    height: hp(13),
+    alignSelf: 'center',
+    marginBottom: hp(4)
   },
-
   form: {
-      gap: 12,
-      paddingBottom: hp(2),
+    gap: 12,
+    paddingBottom: hp(2),
   },
-
   label: {
-      fontSize: hp(1.5),
-      color: theme.colors.textWhite,
+    fontSize: hp(1.5),
+    color: theme.colors.textWhite,
   },
-
+  errorText: {
+    color: '#FF4444',
+    fontSize: hp(1.4),
+    marginTop: -8,
+    marginBottom: 4,
+  },
   footerText: {
-      textAlign: 'center',
-      color: theme.colors.textWhite,
-      fontSize: hp(1.6),
-      marginTop: hp(3),
+    textAlign: 'center',
+    color: theme.colors.textWhite,
+    fontSize: hp(1.6),
+    marginTop: hp(3),
   },
-
   linkText: {
-      color: theme.colors.forgotpasswordlink,
-      textDecorationLine: 'underline',
-      marginTop: hp(1)
+    color: theme.colors.forgotpasswordlink,
+    textDecorationLine: 'underline',
+    marginTop: hp(1)
   },
-
   createButtonContainer: {
     marginTop: hp(4)
   },
+  inputStyle: {
+    flexDirection: 'row',
+    height: hp(6.5),
+    alignItems: 'center',
+    borderWidth: 3,
+    borderColor: '#E2E8F0',
+    backgroundColor: 'white',
+    borderRadius: theme.radius.xxl,
+    paddingHorizontal: 18,
+    gap: 12
+  },
+  placeholderText: {
+    flex: 1,
+    color: '#94A3B8',
+    fontSize: hp(1.8)
+  },
+  selectedValueText: {
+    color: '#000'
+  },
+  selectedFlag: {
+    marginRight: 4,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20
+  },
+  modalContent: {
+    backgroundColor: 'white',
+    borderRadius: 15,
+    padding: 20,
+    width: '90%',
+    maxHeight: '80%'
+  },
+  modalScrollContent: {
+    flexGrow: 1,
+  },
+  modalTitle: {
+    fontSize: hp(2.2),
+    fontWeight: 'bold',
+    color: '#000',
+    marginBottom: 15,
+    textAlign: 'center'
+  },
+  languageOption: {
+    paddingVertical: 12,
+    paddingHorizontal: 15,
+    borderRadius: 8,
+    marginVertical: 4
+  },
+  selectedLanguageOption: {
+    backgroundColor: theme.colors.shadowcolor,
+  },
+  languageOptionText: {
+    fontSize: hp(1.8),
+    color: '#000'
+  },
+  selectedLanguageOptionText: {
+    color: theme.colors.themebg,
+  },
+  countryOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+  },
+  selectedCountryOption: {
+    backgroundColor: '#f3f4f6',
+  },
+  countryOptionText: {
+    fontSize: 16,
+    color: '#1f2937',
+    marginLeft: 12,
+  },
+  selectedCountryOptionText: {
+    color: '#4b5563',
+    fontWeight: '500',
+  },
 });
+
+export default Signup;
