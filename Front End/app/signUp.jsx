@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View, Image, Alert, ScrollView, KeyboardAvoidingView, Platform, Pressable, Modal, TouchableOpacity } from 'react-native';
+import { StyleSheet, Text, View, Image, Alert, ScrollView, KeyboardAvoidingView, Platform, Pressable, Modal, TouchableOpacity, Keyboard } from 'react-native';
 import React, { useState, useEffect } from 'react';
 import ScreenWrapper from '../components/ScreenWrapper';
 import { theme } from '../constants/theme';
@@ -14,6 +14,8 @@ import { parsePhoneNumber, getCountries, getCountryCallingCode } from 'libphonen
 import { Picker } from '@react-native-picker/picker';
 import Flag from 'react-native-flags';
 import { LANGUAGES, COUNTRIES, getFormattedCountryCodes } from '../constants/info';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { supabase } from '../lib/supabase';
 
 const isValidEmail = (email) => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -36,6 +38,14 @@ const isPasswordValid = (password) => {
 
 const Signup = () => {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
+  
+  const platformSpacing = {
+    paddingBottom: Platform.select({
+      ios: Math.max(insets.bottom, hp(2)),
+      android: Math.max(insets.bottom, hp(2)),
+    }),
+  };
   
   const [userName, setUserName] = useState('');
   const [userNameError, setUserNameError] = useState('');
@@ -127,12 +137,18 @@ const Signup = () => {
     }
   };
 
-  const handleConfirmDate = (event, date) => {
+  const handleDateSelect = (event, date) => {
+    setShowDatePicker(Platform.OS === 'ios');
+    
     if (date) {
       setSelectedDate(date);
       setDisplayDate(date.toLocaleDateString());
     }
-    setShowDatePicker(false);
+  };
+
+  const openDatePicker = () => {
+    Keyboard.dismiss();
+    setShowDatePicker(true);
   };
 
   const handleLanguageSelect = (value) => {
@@ -145,21 +161,32 @@ const Signup = () => {
     setShowCountryModal(false);
   };
 
-  // check if email exists API call
   const checkIfEmailExists = async (email) => {
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    // assumed that these emails are already registered
-    const existingEmails = ['test@example.com', 'user@domain.com', 'admin@site.org'];
-    return existingEmails.includes(email.toLowerCase());
+    try {
+      const { data, error } = await supabase
+        .from('travelers')
+        .select('email')
+        .eq('email', email.toLowerCase())
+        .maybeSingle();
+      
+      if (error) {
+        throw new Error('Failed to check email availability');
+      }
+      
+      return data !== null;
+    } catch (err) {
+      throw err;
+    }
   };
 
   const validateForm = async () => {
     let isValid = true;
-    
+    const emptyFields = [];
+  
+    // Check each field and collect empty ones
     if (!userName) {
       setUserNameError('Username is required');
+      emptyFields.push('username');
       isValid = false;
     } else if (!isValidUsername(userName)) {
       setUserNameError('Username can only contain letters, numbers, and underscores');
@@ -167,9 +194,10 @@ const Signup = () => {
     } else {
       setUserNameError('');
     }
-
+  
     if (!fullName) {
       setFullNameError('Full name is required');
+      emptyFields.push('full name');
       isValid = false;
     } else if (!isValidFullName(fullName)) {
       setFullNameError('Full name must contain 2-4 parts separated by spaces');
@@ -177,15 +205,15 @@ const Signup = () => {
     } else {
       setFullNameError('');
     }
-
+  
     if (!email) {
       setEmailError('Email is required');
+      emptyFields.push('email');
       isValid = false;
     } else if (!isValidEmail(email)) {
       setEmailError('Please enter a valid email address');
       isValid = false;
     } else {
-
       try {
         const emailExists = await checkIfEmailExists(email);
         if (emailExists) {
@@ -199,75 +227,163 @@ const Signup = () => {
         isValid = false;
       }
     }
-
+  
     if (!password) {
-      Alert.alert('Signup', 'Please enter a password!');
-      isValid = false;
-    } else if (!isPasswordValid(password)) {
-      Alert.alert('Signup', 'Password must be at least 8 characters long!');
+      emptyFields.push('password');
       isValid = false;
     }
-
+  
     if (!confirmPassword) {
-      Alert.alert('Signup', 'Please confirm your password!');
+      emptyFields.push('confirm password');
       isValid = false;
-    } else if (password !== confirmPassword) {
+    } else if (password && confirmPassword && password !== confirmPassword) {
       Alert.alert('Signup', 'Passwords do not match!');
       isValid = false;
     }
-
+  
     if (!displayDate) {
-      Alert.alert('Signup', 'Please select your date of birth!');
+      emptyFields.push('date of birth');
       isValid = false;
     }
-
+  
     if (!phoneNumber) {
-      Alert.alert('Signup', 'Please enter your phone number!');
+      emptyFields.push('phone number');
       isValid = false;
     } else if (!isPhoneValid) {
       Alert.alert('Signup', 'Please enter a valid phone number!');
       isValid = false;
     }
-
+  
     if (!emergencyPhoneNumber) {
-      Alert.alert('Signup', 'Please enter an emergency contact number!');
+      emptyFields.push('emergency contact number');
       isValid = false;
     } else if (!isEmergencyPhoneValid) {
       Alert.alert('Signup', 'Please enter a valid emergency contact number!');
       isValid = false;
     }
-
+  
     if (!selectedLanguage) {
-      Alert.alert('Signup', 'Please select your preferred language!');
+      emptyFields.push('language');
       isValid = false;
     }
-
+  
     if (!selectedCountry) {
-      Alert.alert('Signup', 'Please select your country!');
+      emptyFields.push('country');
       isValid = false;
     }
+  
+    if (emptyFields.length > 1) {
+      Alert.alert('Signup', 'Please fill all the details to continue!');
+      return false;
+    } else if (emptyFields.length === 1) {
+      switch (emptyFields[0]) {
+        case 'username':
+          Alert.alert('Signup', 'Please enter a username!');
+          break;
+        case 'full name':
+          Alert.alert('Signup', 'Please enter your full name!');
+          break;
+        case 'email':
+          Alert.alert('Signup', 'Please enter your email!');
+          break;
+        case 'password':
+          Alert.alert('Signup', 'Please enter a password!');
+          break;
+        case 'confirm password':
+          Alert.alert('Signup', 'Please confirm your password!');
+          break;
+        case 'date of birth':
+          Alert.alert('Signup', 'Please select your date of birth!');
+          break;
+        case 'phone number':
+          Alert.alert('Signup', 'Please enter your phone number!');
+          break;
+        case 'emergency contact number':
+          Alert.alert('Signup', 'Please enter an emergency contact number!');
+          break;
+        case 'language':
+          Alert.alert('Signup', 'Please select your preferred language!');
+          break;
+        case 'country':
+          Alert.alert('Signup', 'Please select your country!');
+          break;
+      }
+      return false;
+    }
 
+    if (password && !isPasswordValid(password)) {
+      Alert.alert('Signup', 'Password must be at least 8 characters long!');
+      isValid = false;
+    }
+  
     return isValid;
   };
 
   const onSubmit = async () => {
+    setUserName(prevName => prevName.trim());
+    setFullName(prevFullName => prevFullName.trim());
+    setEmail(prevEmail => prevEmail.trim());
+    setPhoneNumber(prevPhone => prevPhone.trim());
+    setEmergencyPhoneNumber(prevPhone => prevPhone.trim());
+    setPassword(prevPassword => prevPassword.trim());
+
+    await new Promise(resolve => setTimeout(resolve, 0));
+
     const isFormValid = await validateForm();
     if (!isFormValid) return;
 
+    setLoading(true);
+
+    const fullPhoneNumber = `${countryCode}${phoneNumber.trim()}`;
+    const fullEmergencyPhoneNumber = `${emergencyCountryCode}${emergencyPhoneNumber.trim()}`;
+
     try {
-      setLoading(true);
-      
-      // API call to register the user
-      // For now, just show a success message
-      
-      Alert.alert('Success', 'Account created successfully!');
-      router.push('/login');
-    } catch (error) {
-      Alert.alert('Error', error.message || 'Something went wrong!');
-    } finally {
-      setLoading(false);
+        const { data, error } = await supabase.auth.signUp({
+            email,
+            password: password.trim(),
+        });
+
+        if (error) {
+            setLoading(false);
+            Alert.alert('Sign up failed', error.message);
+            return;
+        }
+
+        const userId = data?.user?.id;
+        if (!userId) {
+            setLoading(false);
+            Alert.alert('Sign up failed', 'User ID is missing.');
+            return;
+        }
+
+        const { error: insertError } = await supabase
+            .from('travelers')
+            .insert([
+                {
+                    id: userId,
+                    user_name: userName.trim(),
+                    full_name: fullName.trim(),
+                    email: email.trim(),
+                    date_of_birth: selectedDate,
+                    phone_number: fullPhoneNumber,
+                    emergency_phone: fullEmergencyPhoneNumber,
+                    language: selectedLanguage,
+                    country: selectedCountry,
+                    created_at: new Date().toISOString(),
+                }
+            ]);
+
+        setLoading(false);
+
+        if (insertError) {
+            Alert.alert('Sign up error', insertError.message);
+            return;
+        }
+    } catch (err) {
+        setLoading(false);
+        Alert.alert('Sign up error', err.message || 'An unexpected error occurred');
     }
-  };
+};
 
   const CountryCodePicker = ({ selectedValue, onValueChange }) => (
     <Picker
@@ -379,19 +495,67 @@ const Signup = () => {
     </Modal>
   );
 
+  const renderDatePicker = () => {
+    if (!showDatePicker) return null;
+    
+    return (
+      <View>
+        {Platform.OS === 'ios' ? (
+          <View style={styles.iosDatePickerContainer}>
+            <View style={styles.iosDatePickerHeader}>
+              <TouchableOpacity 
+                onPress={() => setShowDatePicker(false)}
+                style={styles.iosDatePickerButton}
+              >
+                <Text style={styles.iosDatePickerButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                onPress={() => {
+                  setShowDatePicker(false);
+                }}
+                style={styles.iosDatePickerButton}
+              >
+                <Text style={[styles.iosDatePickerButtonText, {color: theme.colors.themebg}]}>Done</Text>
+              </TouchableOpacity>
+            </View>
+            
+            <DateTimePicker
+              value={selectedDate}
+              mode="date"
+              display="spinner"
+              onChange={handleDateSelect}
+              maximumDate={new Date()}
+              style={styles.iosDatePicker}
+            />
+          </View>
+        ) : (
+          <DateTimePicker
+            value={selectedDate}
+            mode="date"
+            display="default"
+            onChange={handleDateSelect}
+            maximumDate={new Date()}
+          />
+        )}
+      </View>
+    );
+  };
+
   return (
     <ScreenWrapper bg="#303030">
-      <StatusBar style="dark" />
+      <StatusBar style="light" />
       <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={hp(-5)}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 10 : 0}
         style={styles.container}
       >
         <BackButton router={router} />
 
         <ScrollView 
-          contentContainerStyle={styles.scrollContent} 
+          contentContainerStyle={[styles.scrollContent, platformSpacing]} 
           showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
         >
           <Image
             style={styles.iconImage}
@@ -454,21 +618,16 @@ const Signup = () => {
             />
 
             <Text style={styles.label}>Date of Birth</Text>
-            <Input
-              icon={<Icon name="calendar" size={26} strokeWidth={1.6} />}
-              placeholder='Select a Date'
-              value={displayDate}
-              onFocus={() => setShowDatePicker(true)}
-            />
-            {showDatePicker && (
-              <DateTimePicker
-                value={selectedDate}
-                mode="date"
-                display="default"
-                onChange={handleConfirmDate}
-                maximumDate={new Date()}
+            <Pressable onPress={openDatePicker}>
+              <Input
+                icon={<Icon name="calendar" size={26} strokeWidth={1.6} />}
+                placeholder='Select a Date'
+                value={displayDate}
+                editable={false}
+                onPressIn={() => {}}
               />
-            )}
+            </Pressable>
+            {renderDatePicker()}
 
             <Text style={styles.label}>Phone Number</Text>
             <Input
@@ -579,7 +738,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     justifyContent: 'center',
-    paddingBottom: hp(5),
+    paddingTop: hp(1),
   },
   welcomeText: {
     fontSize: hp(3.8),
@@ -702,6 +861,32 @@ const styles = StyleSheet.create({
     color: '#4b5563',
     fontWeight: '500',
   },
+  iosDatePickerContainer: {
+    backgroundColor: 'white',
+    borderRadius: 15,
+    overflow: 'hidden',
+    marginBottom: 15,
+  },
+  iosDatePickerHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    padding: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+  },
+  iosDatePickerButton: {
+    padding: 5,
+    paddingHorizontal: 15,
+  },
+  iosDatePickerButtonText: {
+    fontSize: 16,
+    color: '#000',
+    fontWeight: '500',
+  },
+  iosDatePicker: {
+    width: '100%',
+    height: 200,
+  }
 });
 
 export default Signup;
