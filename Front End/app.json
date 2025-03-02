@@ -3,6 +3,7 @@
     "name": "trip-ceylon-app",
     "slug": "trip-ceylon-app",
     "version": "1.0.0",
+    "backgroundColor": "#303030",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "myapp",
