@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View, TouchableOpacity, Image, Pressable, Alert } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, Image, Pressable, Alert, Platform } from 'react-native';
 import React, { useRef, useState } from 'react';
 import ScreenWrapper from '../components/ScreenWrapper';
 import { theme } from '../constants/theme';
@@ -9,6 +9,8 @@ import { useRouter } from 'expo-router';
 import { wp, hp } from '../helpers/common';
 import Input from '../components/Input';
 import Button from '../components/Button';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { supabase } from '../lib/supabase'
 
 const Login = () => {
     const router = useRouter();
@@ -16,6 +18,14 @@ const Login = () => {
     const passwordRef = useRef("");
     const [loading, setLoading] = useState(false);
     const [passwordVisible, setPasswordVisible] = useState(false);
+    const insets = useSafeAreaInsets();
+
+    const platformSpacing = {
+        paddingBottom: Platform.select({
+            ios: Math.max(insets.bottom, hp(2)),
+            android: Math.max(insets.bottom, hp(2)),
+        }),
+    };
 
     const togglePasswordVisibility = () => {
         setPasswordVisible(!passwordVisible);
@@ -26,6 +36,23 @@ const Login = () => {
             Alert.alert('Login', 'Please fill all the fields!');
             return;
         }
+
+        let email = emailRef.current.trim();
+        let password = passwordRef.current.trim();
+
+        setLoading(true);
+
+        const {error} = await supabase.auth.signInWithPassword({
+            email,
+            password
+        });
+
+        setLoading(false);
+
+        console.log('error: ', error);
+        if(error){
+            Alert.alert('Login', error.message);
+        }
     };
 
     const handleGoogleLogin = () => {
@@ -35,7 +62,7 @@ const Login = () => {
     return (
         <ScreenWrapper bg="#303030">
             <StatusBar style="dark" />
-            <View style={styles.container}>
+            <View style={[styles.container, platformSpacing]}>
                 <BackButton router={router} />
 
                 {/* Logo Icon */}
@@ -52,7 +79,7 @@ const Login = () => {
 
                 {/* Form */}
                 <View style={styles.form}>
-                    <Text style={styles.label}>E-mail / User Name</Text>
+                    <Text style={styles.label}>E-mail</Text>
                     <Input
                         icon={<Icon name="user" size={26} strokeWidth={1.6} />}
                         placeholder='Enter your email'
@@ -85,7 +112,7 @@ const Login = () => {
                     </View>
                     <View style={styles.signupContainer}>
                         <Text style={styles.signupText}>OR</Text>
-                        <Pressable>
+                        <Pressable onPress={()=> router.push('signUp')}>
                             <Text style={styles.signupText2}>REGISTER NOW!</Text>
                         </Pressable>
                     </View>
