@@ -6,6 +6,8 @@ export const theme = {
       themebg: '#303030',
       shadowcolor: '#E2E8F0',
       forgotpasswordlink: '#3C9AFB',
+      themeGreen: '#A9E34B',
+      lightThemeGreen: 'rgba(169, 227, 75, 0.8)',
     },
   
     fonts: {
@@ -16,12 +18,14 @@ export const theme = {
     },
   
     radius: {
+      ss: 4,
       xs: 10,
       sm: 12,
       md: 14,
       lg: 16,
       xl: 18,
       xxl: 22,
+      xxxl:30,
     },
   };
   
