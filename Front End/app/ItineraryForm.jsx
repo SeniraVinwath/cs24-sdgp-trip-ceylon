@@ -80,6 +80,19 @@ const ItineraryForm = () => {
         }}
       />
 
+      <Text style={{ color: "white", fontSize: 16 }}>Budget $</Text>
+      <TextInput
+        placeholder="Enter Budget"
+        placeholderTextColor="gray"
+        keyboardType="numeric"
+        style={{
+          backgroundColor: "white",
+          padding: 15,
+          borderRadius: 10,
+          marginVertical: 10,
+        }}
+        />
+
       
       
       <TouchableOpacity style={{ backgroundColor: "limegreen", padding: 15, borderRadius: 10, alignItems: "center", marginTop: 20 }}>
