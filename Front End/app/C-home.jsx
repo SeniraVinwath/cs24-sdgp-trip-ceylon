@@ -58,3 +58,45 @@ export default function HomeScreen() {
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.secondary,
+    },
+    backButtonContainer: {
+      position: "absolute",
+      top: 42, 
+      left: 5,
+      zIndex: 10, 
+    },
+    menuContainer: {
+      flex: 1,
+      padding: 20,
+      alignItems: 'center',
+    },
+    menuTitle: {
+      ...typography.heading,
+      marginBottom: 20,
+    },
+    menuItem: {
+      backgroundColor: '#222222',
+      width: '100%',
+      padding: 15,
+      borderRadius: 10,
+      marginBottom: 15,
+      alignItems: 'center',
+    },
+    menuItemText: {
+      color: colors.white,
+      fontSize: 18,
+      fontWeight: '500',
+    },
+    map: {
+      width: '80%',
+      height: 250,
+      marginTop: 50,
+      marginLeft: 10,
+    },
+  });
+  
