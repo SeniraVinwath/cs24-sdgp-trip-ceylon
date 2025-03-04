@@ -86,3 +86,58 @@ export default function FindTravelersScreen() {
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.secondary,
+    },
+    backButtonContainer: {
+      position: "absolute",
+      top: 42, 
+      left: 5,
+      zIndex: 10,
+    },
+    content: {
+      flex: 1,
+      padding: 20,
+    },
+    sectionTitle: {
+      ...typography.heading,
+      marginBottom: 20,
+      textAlign: 'center',
+      color: colors.white,
+    },
+    list: {
+      paddingBottom: 20,
+    },
+    loadingText: {
+      color: colors.white,
+      textAlign: 'center',
+      marginTop: 20,
+    },
+    noTravelersText: {
+      color: colors.white,
+      textAlign: 'center',
+      marginTop: 40,
+      fontSize: 16,
+    },
+    notification: {
+      position: 'absolute',
+      bottom: 100,
+      left: 0,
+      right: 0,
+      backgroundColor: 'rgba(255, 255, 255, 0.9)',
+      paddingVertical: 12,
+      margin: 20,
+      borderRadius: 8,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    notificationText: {
+      color: colors.black,
+      fontWeight: 'bold',
+      fontSize: 16,
+    },
+  });
+    
