@@ -50,14 +50,38 @@ const ItineraryForm = () => {
         />
       )}
 
-     
-
       <Text style={{ color: "white", fontSize: 16 }}>End Date</Text>
-      <View style={{ flexDirection: "row", alignItems: "center", backgroundColor: "white", borderRadius: 10, marginVertical: 10, padding: 12 }}>
-        <TextInput placeholder="DD-MM-YYYY" placeholderTextColor="gray" style={{ flex: 1 }} />
+      <TouchableOpacity 
+        style={{ flexDirection: "row", alignItems: "center", backgroundColor: "white", borderRadius: 10, marginVertical: 10, padding: 12 }}
+        onPress={() => setShowEndPicker(true)}
+      >
+      <Text style={{ flex: 1 }}>{endDate.toDateString()}</Text>
         <Ionicons name="calendar-outline" size={24} color="gray" />
-      </View>
+      </TouchableOpacity>
+      {showEndPicker && (
+        <DateTimePicker
+          value={endDate}
+          mode="date"
+          display={"default"}
+          onChange={handleEndDateChange}
+        />
+      )}
 
+<Text style={{ color: "white", fontSize: 16 }}> Number of Travellers</Text>
+<TextInput
+        placeholder="Enter number of travelers"
+        placeholderTextColor="gray"
+        keyboardType="numeric"
+        style={{
+          backgroundColor: "white",
+          padding: 15,
+          borderRadius: 10,
+          marginVertical: 10,
+        }}
+      />
+
+      
+      
       <TouchableOpacity style={{ backgroundColor: "limegreen", padding: 15, borderRadius: 10, alignItems: "center", marginTop: 20 }}>
         <Text style={{ color: "black", fontSize: 18, fontWeight: "bold" }}>Generate Travel Plan</Text>
       </TouchableOpacity>
