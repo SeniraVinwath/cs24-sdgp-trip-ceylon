@@ -87,3 +87,78 @@ export default function MyConnectionsScreen() {
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.secondary,
+    },
+    backButtonContainer: {
+      position: "absolute",
+      top: 42,
+      left: 5,
+      zIndex: 10, 
+    },
+    content: {
+      flex: 1,
+      padding: 20,
+    },
+    sectionTitle: {
+      ...typography.heading,
+      marginBottom: 20,
+      textAlign: 'center',
+      color: colors.white,
+    },
+    list: {
+      paddingBottom: 20,
+    },
+    connectionCard: {
+      backgroundColor: '#222222',
+      borderRadius: 10,
+      padding: 15,
+      marginBottom: 15,
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    travelerName: {
+      ...typography.cardTitle,
+      color: colors.white,
+      fontSize: 18,
+      fontWeight: 'bold',
+    },
+    buttonContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    viewButton: {
+      backgroundColor: colors.primary,
+      paddingVertical: 8,
+      paddingHorizontal: 15,
+      borderRadius: 20,
+      marginRight: 10,
+    },
+    viewButtonText: {
+      color: colors.white,
+      fontWeight: 'bold',
+      fontSize: 16,
+    },
+    trashButton: {
+      backgroundColor: 'red',
+      padding: 8,
+      borderRadius: 20,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    loadingText: {
+      color: colors.white,
+      textAlign: 'center',
+      marginTop: 20,
+    },
+    noConnectionsText: {
+      color: colors.white,
+      textAlign: 'center',
+      marginTop: 40,
+      fontSize: 16,
+    },
+  });
