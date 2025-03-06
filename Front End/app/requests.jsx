@@ -85,3 +85,72 @@ export default function RequestsScreen() {
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.secondary,
+    },
+    backButtonContainer: {
+      position: "absolute",
+      top: 42, 
+      left: 5,
+      zIndex: 10,
+    },
+    content: {
+      flex: 1,
+      padding: 20,
+    },
+    sectionTitle: {
+      ...typography.heading,
+      marginBottom: 20,
+      textAlign: 'center',
+      color: colors.white,
+    },
+    list: {
+      paddingBottom: 20,
+    },
+    requestCard: {
+      backgroundColor: '#222222',
+      borderRadius: 10,
+      padding: 15,
+      marginBottom: 15,
+      alignItems: 'center',
+    },
+    requesterName: {
+      ...typography.cardTitle,
+      color: colors.white,
+      fontSize: 18,
+      fontWeight: 'bold',
+      marginBottom: 10,
+    },
+    buttonContainer: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      width: '100%',
+    },
+    acceptButton: {
+      backgroundColor: colors.buttonGreen,
+      paddingVertical: 10,
+      paddingHorizontal: 20,
+      borderRadius: 25,
+      marginRight: 10,
+    },
+    declineButton: {
+      backgroundColor: 'red',
+      paddingVertical: 10,
+      paddingHorizontal: 20,
+      borderRadius: 25,
+    },
+    buttonText: {
+      color: colors.white,
+      fontWeight: 'bold',
+      fontSize: 16,
+    },
+    noRequestsText: {
+      color: colors.white,
+      textAlign: 'center',
+      marginTop: 40,
+      fontSize: 16,
+    },
+  });
