@@ -64,6 +64,8 @@ const Signup = () => {
   const [countryList, setCountryList] = useState([]);
   const [selectedCountry, setSelectedCountry] = useState('');
   const [showCountryModal, setShowCountryModal] = useState(false);
+  const [selectedGender, setSelectedGender] = useState('');
+  const [showGenderModal, setShowGenderModal] = useState(false);
   
   useEffect(() => {
     const countries = getCountries();
@@ -87,6 +89,11 @@ const Signup = () => {
   const togglePasswordVisibility = () => {
     setPasswordVisible(!passwordVisible);
   };
+
+  const GENDERS = [
+    { value: 'Male', label: 'Male' },
+    { value: 'Female', label: 'Female' },
+  ];
 
   const handleUsernameChange = (value) => {
     setUserName(value);
@@ -183,7 +190,6 @@ const Signup = () => {
     let isValid = true;
     const emptyFields = [];
   
-    // Check each field and collect empty ones
     if (!userName) {
       setUserNameError('Username is required');
       emptyFields.push('username');
@@ -271,6 +277,11 @@ const Signup = () => {
       emptyFields.push('country');
       isValid = false;
     }
+
+    if (!selectedGender) {
+      emptyFields.push('gender');
+      isValid = false;
+    }
   
     if (emptyFields.length > 1) {
       Alert.alert('Signup', 'Please fill all the details to continue!');
@@ -306,6 +317,9 @@ const Signup = () => {
           break;
         case 'country':
           Alert.alert('Signup', 'Please select your country!');
+          break;
+        case 'gender':
+          Alert.alert('Signup', 'Please select your gender!');
           break;
       }
       return false;
@@ -370,6 +384,7 @@ const Signup = () => {
                     language: selectedLanguage,
                     country: selectedCountry,
                     created_at: new Date().toISOString(),
+                    gender: selectedGender,
                 }
             ]);
 
@@ -406,6 +421,50 @@ const Signup = () => {
         />
       ))}
     </Picker>
+  );
+
+  const GenderModal = () => (
+    <Modal
+      visible={showGenderModal}
+      transparent
+      animationType="fade"
+      onRequestClose={() => setShowGenderModal(false)}
+    >
+      <TouchableOpacity 
+        style={styles.modalOverlay}
+        activeOpacity={1}
+        onPress={() => setShowGenderModal(false)}
+      >
+        <View style={styles.modalContent}>
+          <Text style={styles.modalTitle}>Select Gender</Text>
+          <ScrollView 
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.modalScrollContent}
+          >
+            {GENDERS.map(({ value, label }) => (
+              <TouchableOpacity
+                key={value}
+                style={[
+                  styles.genderOption,
+                  selectedGender === value && styles.selectedGenderOption
+                ]}
+                onPress={() => {
+                  setSelectedGender(value);
+                  setShowGenderModal(false);
+                }}
+              >
+                <Text style={[
+                  styles.genderOptionText,
+                  selectedGender === value && styles.selectedGenderOptionText
+                ]}>
+                  {label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+      </TouchableOpacity>
+    </Modal>
   );
 
   const LanguageModal = () => (
@@ -628,6 +687,18 @@ const Signup = () => {
               />
             </Pressable>
             {renderDatePicker()}
+
+            <Text style={styles.label}>Select your Gender</Text>
+            <TouchableOpacity onPress={() => setShowGenderModal(true)} activeOpacity={0.7}>
+              <View style={styles.inputStyle}>
+                <Icon name="user" size={26} strokeWidth={1.6} color="#475569" />
+                <Text style={[styles.placeholderText, selectedGender && styles.selectedValueText]}>
+                  {GENDERS.find(gender => gender.value === selectedGender)?.label || 'Select gender'}
+                </Text>
+                <Icon name="arrowRight" size={20} strokeWidth={1.6} color="#475569" />
+              </View>
+            </TouchableOpacity>
+            <GenderModal />
 
             <Text style={styles.label}>Phone Number</Text>
             <Input
@@ -886,6 +957,22 @@ const styles = StyleSheet.create({
   iosDatePicker: {
     width: '100%',
     height: 200,
+  },
+  genderOption: {
+    paddingVertical: 12,
+    paddingHorizontal: 15,
+    borderRadius: 8,
+    marginVertical: 4
+  },
+  selectedGenderOption: {
+    backgroundColor: theme.colors.shadowcolor,
+  },
+  genderOptionText: {
+    fontSize: hp(1.8),
+    color: '#000'
+  },
+  selectedGenderOptionText: {
+    color: theme.colors.themebg,
   }
 });
 
