@@ -173,7 +173,7 @@ const Tut4 = () => {
 
         <View style={styles.navContainer}>
             {[1, 2, 3].map((num) => (
-                <Pressable key={num} style={styles.navDot} onPress={() => router.push(`tut${num}`)} />
+                <Pressable key={num} style={styles.navDot} onPress={() => router.push(`tut1`)} />
             ))}
             <Animated.View style={[
                 styles.navDot,
