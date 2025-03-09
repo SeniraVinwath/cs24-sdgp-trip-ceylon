@@ -1,0 +1,26 @@
+{
+  "name": "cs24-sdgp-trip-ceylon",
+  "version": "1.0.0",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SeniraVinwath/cs24-sdgp-trip-ceylon.git"
+  },
+  "author": "chamod",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/SeniraVinwath/cs24-sdgp-trip-ceylon/issues"
+  },
+  "homepage": "https://github.com/SeniraVinwath/cs24-sdgp-trip-ceylon#readme",
+  "description": "",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.49.1",
+    "body-parser": "^1.20.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2"
+  }
+}
