@@ -47,7 +47,7 @@ export default function HomeScreen() {
           <Text style={styles.menuItemText}>My Connections</Text>
         </Link>
 
-        <Link href="/Requests" style={styles.menuItem}>
+        <Link href="/requests" style={styles.menuItem}>
           <Text style={styles.menuItemText}> Connection Requests</Text>
         </Link>
 
