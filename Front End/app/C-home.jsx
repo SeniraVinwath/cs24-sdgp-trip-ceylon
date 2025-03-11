@@ -43,11 +43,11 @@ export default function HomeScreen() {
           <Text style={styles.menuItemText}>Find Travelers</Text>
         </Link>
 
-        <Link href="/my-connections" style={styles.menuItem}>
+        <Link href="/MyConnectionsScreen" style={styles.menuItem}>
           <Text style={styles.menuItemText}>My Connections</Text>
         </Link>
 
-        <Link href="/requests" style={styles.menuItem}>
+        <Link href="/Requests" style={styles.menuItem}>
           <Text style={styles.menuItemText}> Connection Requests</Text>
         </Link>
 
