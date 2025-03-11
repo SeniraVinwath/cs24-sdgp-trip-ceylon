@@ -24,10 +24,10 @@ const MainLayout = () => {
         if(session){
           setAuth(session?.user);
           updateUserData(session?.user)
-          router.replace('/home')
+          router.replace('/C-home')
         } else{
           setAuth(null);
-          router.replace('/welcome')
+          router.replace('/C-home')
         }
       })
     },[])
