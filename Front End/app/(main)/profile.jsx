@@ -76,6 +76,13 @@ const UserHeader = ({user, router, handleLogout}) => {
           </View>
 
           {/* Other User Details */}
+
+            {
+              user && user.bio && (
+                <Text style={styles.infoText3}>{user.bio}</Text>
+              )
+            }
+
           <View style={{gap: 10, marginTop:hp(2)}}>
             <View style={styles.info}>
               <Icon name='gender' size={20} color='#d1d1d1'/>
@@ -101,12 +108,6 @@ const UserHeader = ({user, router, handleLogout}) => {
                 {user && user.email}
               </Text>
             </View>
-
-            {
-              user && user.bio && (
-                <Text style={styles.infoText2}>{user.bio}</Text>
-              )
-            }
           </View>
         </View>
       </View>
@@ -165,6 +166,12 @@ const styles = StyleSheet.create({
     fontSize: hp(1.6),
     fontWeight: '500',
     color: '#d1d1d1',
+  },
+  infoText3: {
+    fontSize: hp(1.6),
+    fontWeight: '500',
+    color: '#c3c2c2',
+    textAlign: 'center',
   },
   logoutButton: {
     position: 'absolute',
