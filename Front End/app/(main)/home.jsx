@@ -2,7 +2,6 @@ import { Alert, Button, Pressable, StyleSheet, Text, View, Animated } from 'reac
 import React, { useState, useRef, useEffect } from 'react'
 import ScreenWrapper from '../../components/ScreenWrapper'
 import { useAuth } from '../../contexts/AuthContext'
-import { supabase } from '../../lib/supabase'
 import { wp, hp } from '../../helpers/common'
 import { theme } from '../../constants/theme'
 import Icon from '../../assets/icons'
@@ -15,8 +14,6 @@ const Home = () => {
     const router = useRouter();
     
     const dropdownAnim = useRef(new Animated.Value(0)).current;
-
-    console.log('user: ', user);
 
     useEffect(() => {
       if (showDropdown) {
@@ -33,15 +30,6 @@ const Home = () => {
         }).start();
       }
     }, [showDropdown]);
-
-    // const onLogout = async () => {
-    //   const {error} = await supabase.auth.signOut();
-    //   if(error){
-    //     Alert.alert('Sign out', "Error signing out!")
-    //   }
-    // }
-
-    //this commentis a change after stash
 
     const toggleDropdown = () => {
       setShowDropdown(!showDropdown);
@@ -130,7 +118,6 @@ const Home = () => {
           </Animated.View>
         )}
       </View>
-      {/* <Button title='logout' onPress={onLogout} /> */}
     </ScreenWrapper>
   )
 }
