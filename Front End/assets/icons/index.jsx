@@ -26,8 +26,11 @@ import Edit from './Edit';
 import Gender from './Gender';
 import Cake from './Cake';
 import Camera from './Camera';
-import Location from './Location'
-import ConName from './ConName'
+import Location from './Location';
+import ConName from './ConName';
+import Image from './Image';
+import Video from './Video';
+import Delete from './Delete';
 
 const icons = {
     home: Home,
@@ -57,6 +60,9 @@ const icons = {
     camera: Camera,
     location: Location,
     conName: ConName,
+    image:Image,
+    video:Video,
+    delete:Delete,
 };
 
 const Icon = ({ name, ...props }) => {
