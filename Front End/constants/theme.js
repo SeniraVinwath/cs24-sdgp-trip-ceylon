@@ -9,7 +9,9 @@ export const theme = {
       themeGreen: '#A9E34B',
       lightThemeGreen: 'rgba(169, 227, 75, 0.8)',
       roseLight: '#FFC5CB',
-      darkLight: '#555555'
+      darkLight: '#555555',
+      textDark: '#dbdddf',
+      textDark2: '#c5c6c7'
     },
   
     fonts: {
