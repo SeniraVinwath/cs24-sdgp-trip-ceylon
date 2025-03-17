@@ -31,6 +31,12 @@ import ConName from './ConName';
 import Image from './Image';
 import Video from './Video';
 import Delete from './Delete';
+import More from './More';
+import Heart from './Heart';
+import Comment from './Comment';
+import Globe from './Globe';
+import Share4 from './Share4';
+import Bookmark from './Bookmark';
 
 const icons = {
     home: Home,
@@ -63,6 +69,12 @@ const icons = {
     image:Image,
     video:Video,
     delete:Delete,
+    more:More,
+    heart:Heart,
+    comment:Comment,
+    globe:Globe,
+    share4: Share4,
+    bookmark: Bookmark,
 };
 
 const Icon = ({ name, ...props }) => {
