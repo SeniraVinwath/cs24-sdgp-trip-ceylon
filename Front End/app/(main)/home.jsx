@@ -1,4 +1,4 @@
-import { Alert, Button, Pressable, StyleSheet, Text, View, Animated } from 'react-native'
+import { Alert, Button, Pressable, StyleSheet, Text, View, Animated, FlatList } from 'react-native'
 import React, { useState, useRef, useEffect } from 'react'
 import ScreenWrapper from '../../components/ScreenWrapper'
 import { useAuth } from '../../contexts/AuthContext'
@@ -7,11 +7,55 @@ import { theme } from '../../constants/theme'
 import Icon from '../../assets/icons'
 import { useRouter } from 'expo-router'
 import Avatar from '../../components/Avatar'
+import { fetchPosts } from '../../services/postService'
+import PostCard from '../../components/PostCard'
+import Loading from '../../components/Loading'
+import { supabase } from '../../lib/supabase'
+import { getUserData } from '../../services/userService'
+
+var limit = 0;
 
 const Home = () => {
     const [showDropdown, setShowDropdown] = useState(false);
     const {user, setAuth} = useAuth();
     const router = useRouter();
+
+    const [posts, setPosts] = useState([]);
+
+    const handlePostEvent = async (payload)=> {
+      if(payload.eventType == 'INSERT' && payload?.new?.id){
+        let newPost = {...payload.new};
+        let res = await getUserData(newPost.userId);
+        newPost.traveler = res.success? res.data: {};
+        setPosts(prevPosts=> [newPost, ...prevPosts]);
+      }
+    }
+
+    useEffect(()=>{
+
+      let postChannel = supabase
+      .channel('posts')
+      .on('postgres_changes', {event: '*', schema: 'public', table: 'posts'}, handlePostEvent)
+      .subscribe();
+
+      getPosts();
+
+      return ()=> {
+        supabase.removeChannel(postChannel);
+      }
+    },[])
+
+    const getPosts = async ()=> {
+      //call the api here
+      limit = limit + 10;
+
+      console.log('fetching post: ', limit);
+      let res = await fetchPosts(limit);
+      if(res.success){
+        setPosts(res.data);
+      }
+    }
+
     
     const dropdownAnim = useRef(new Animated.Value(0)).current;
 
@@ -117,6 +161,25 @@ const Home = () => {
             </View>
           </Animated.View>
         )}
+
+        {/* posts */}
+        <FlatList
+          data={posts}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.listStyle}
+          keyExtractor={item=> item.id.toString()}
+          renderItem={({item})=> <PostCard
+            item={item}
+            currentUser={user}
+            router={router}
+            />
+          }
+          ListFooterComponent={(
+            <View style={{marginVertical: posts.length==0? 200: 30}}>
+              <Loading/>
+            </View>
+          )}
+        />
       </View>
     </ScreenWrapper>
   )
@@ -158,7 +221,6 @@ const styles = StyleSheet.create({
   },
   listStyle: {
     paddingTop: 20,
-    paddingHorizontal: wp(4)
   },
   noPosts: {
     fontSize: hp(2),
