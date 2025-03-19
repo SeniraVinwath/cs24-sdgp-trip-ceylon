@@ -21,38 +21,67 @@ const Home = () => {
     const router = useRouter();
 
     const [posts, setPosts] = useState([]);
+    const [hasMore, setHasMore] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
 
-    const handlePostEvent = async (payload)=> {
-      if(payload.eventType == 'INSERT' && payload?.new?.id){
+    const handlePostEvent = async (payload) => {
+      if(payload.eventType === 'INSERT' && payload?.new?.id){
         let newPost = {...payload.new};
         let res = await getUserData(newPost.userId);
-        newPost.traveler = res.success? res.data: {};
-        setPosts(prevPosts=> [newPost, ...prevPosts]);
+        newPost.traveler = res.success ? res.data : {};
+        newPost.likeCount = 0;
+        newPost.userLiked = false;
+        setPosts(prevPosts => [newPost, ...prevPosts]);
       }
     }
 
-    useEffect(()=>{
+    useEffect(() => {
+      const postChannel = supabase
+        .channel('posts')
+        .on('postgres_changes', {event: '*', schema: 'public', table: 'posts'}, handlePostEvent)
+        .subscribe();
 
-      let postChannel = supabase
-      .channel('posts')
-      .on('postgres_changes', {event: '*', schema: 'public', table: 'posts'}, handlePostEvent)
-      .subscribe();
+      const likeChannel = supabase
+        .channel('likes')
+        .on('postgres_changes', 
+          {event: '*', schema: 'public', table: 'postLikes'}, 
+          () => refreshPosts() 
+        )
+        .subscribe();
 
-      getPosts();
-
-      return ()=> {
+      return () => {
         supabase.removeChannel(postChannel);
+        supabase.removeChannel(likeChannel);
       }
-    },[])
+    }, []);
 
-    const getPosts = async ()=> {
-      //call the api here
-      limit = limit + 10;
+    const getPosts = async () => {
+      if(!hasMore || !user?.id) return;
+      limit += 4;
 
-      console.log('fetching post: ', limit);
-      let res = await fetchPosts(limit);
-      if(res.success){
-        setPosts(res.data);
+      try {
+        const res = await fetchPosts(user.id, limit);
+        if(res.success) {
+          setPosts(res.data);
+          setHasMore(res.data.length >= limit);
+        }
+      } catch (error) {
+        Alert.alert('Error', 'Failed to load posts');
+      }
+    }
+
+    const refreshPosts = async () => {
+      try {
+        setRefreshing(true);
+        const res = await fetchPosts(user?.id, limit);
+        if(res.success) {
+          setPosts(res.data);
+          setHasMore(res.data.length >= limit);
+        }
+      } catch (error) {
+        Alert.alert('Error', 'Failed to refresh posts');
+      } finally {
+        setRefreshing(false);
       }
     }
 
@@ -165,18 +194,28 @@ const Home = () => {
         {/* posts */}
         <FlatList
           data={posts}
+          refreshing={refreshing}
+          onRefresh={refreshPosts}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.listStyle}
-          keyExtractor={item=> item.id.toString()}
-          renderItem={({item})=> <PostCard
-            item={item}
-            currentUser={user}
-            router={router}
+          keyExtractor={item => item.id.toString()}
+          renderItem={({item}) => (
+            <PostCard
+              item={item}
+              currentUser={user}
+              router={router}
+              refreshPosts={refreshPosts}
             />
-          }
-          ListFooterComponent={(
-            <View style={{marginVertical: posts.length==0? 200: 30}}>
+          )}
+          onEndReached={getPosts}
+          onEndReachedThreshold={0.5}
+          ListFooterComponent={hasMore ? (
+            <View style={{marginVertical: posts.length === 0 ? 200 : 30}}>
               <Loading/>
+            </View>
+          ) : (
+            <View style={{marginVertical: 30}}>
+              <Text style={styles.noPosts}>You're all caught up for now from Trip Ceylon !</Text>
             </View>
           )}
         />
@@ -223,9 +262,9 @@ const styles = StyleSheet.create({
     paddingTop: 20,
   },
   noPosts: {
-    fontSize: hp(2),
+    fontSize: hp(1.5),
     textAlign: 'center',
-    color: theme.colors.textWhite
+    color: theme.colors.textDark2,
   },
   pill: {
     position: 'absolute',
