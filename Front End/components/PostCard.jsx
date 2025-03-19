@@ -1,17 +1,22 @@
-import { StyleSheet, Text, View } from 'react-native'
+import { Alert, Platform, Share, StyleSheet, Text, View, ToastAndroid } from 'react-native'
 import React, { useState, useEffect } from 'react'
 import { theme } from '../constants/theme'
-import { hp, wp } from '../helpers/common'
+import { hp, stripHtmlTags, wp } from '../helpers/common'
 import Avatar from '../components/Avatar'
 import moment from 'moment'
 import { TouchableOpacity } from 'react-native'
 import Icon from '../assets/icons'
 import RenderHTML from 'react-native-render-html'
 import { Image } from 'expo-image'
-import { getSupabaseFileUrl } from '../services/imageService'
+import { downloadFile, getSupabaseFileUrl } from '../services/imageService'
 import { Video } from 'expo-av'
 import { LOCATIONS } from '../constants/info'
 import { supabase } from '../lib/supabase'
+import { createPostLike, removePostLike } from '../services/postService'
+import * as FileSystem from 'expo-file-system'
+import * as Sharing from 'expo-sharing';
+import * as Clipboard from 'expo-clipboard';
+import Loading from './Loading'
 
 const textStyle = {
     color: theme.colors.textDark2,
@@ -34,13 +39,23 @@ const PostCard = ({
     currentUser,
     router,
     onWishlistUpdate,
+    refreshPosts,
+    showMoreIcon = true,
 }) => {
+
     const [isInWishlist, setIsInWishlist] = useState(false);
     const [isUpdating, setIsUpdating] = useState(false);
+    const [likes, setLikes] = useState([]);
+    const [likeLoading, setLikeLoading] = useState(false);
+    const [shareLoading, setShareLoading] = useState(false);
 
     useEffect(() => {
         checkWishlistStatus();
     }, [item?.locationId, currentUser?.location_wishlist]);
+
+    useEffect(() => {
+        setLikes(item?.postLikes || []);
+    }, [item?.postLikes]);
 
     const checkWishlistStatus = () => {
         if (!item?.locationId || !currentUser?.location_wishlist) {
@@ -51,16 +66,79 @@ const PostCard = ({
         const locationIdString = item.locationId.toString();
         const wishlistArray = currentUser.location_wishlist.split(',').filter(id => id.trim() !== '');
         
-        console.log('Location ID:', locationIdString);
-        console.log('Wishlist array:', wishlistArray);
-        console.log('Is in wishlist?', wishlistArray.includes(locationIdString));
-        
         setIsInWishlist(wishlistArray.includes(locationIdString));
     };
 
     const openPostDetails = () => {
-        //Dummy
+        if(!showMoreIcon) return null;
+        router.push({pathname: 'postDetails', params: {postId: item?.id}})
     }
+
+    const onLike = async () => {
+        if(!currentUser?.id) return;
+        
+        try {
+            setLikeLoading(true);
+            if(item?.userLiked) {
+                await removePostLike(item?.id, currentUser?.id);
+            } else {
+                await createPostLike({ 
+                    userId: currentUser?.id, 
+                    postId: item?.id 
+                });
+            }
+        } catch (error) {
+            Alert.alert('Error', 'Could not update like');
+        } finally {
+            setLikeLoading(false);
+            refreshPosts();
+        }
+    }
+
+
+const onShare = async () => {
+    try {
+        const message = stripHtmlTags(item?.body);
+
+        setShareLoading(true);
+        if (!item?.file) {
+            await Share.share({ message });
+            setShareLoading(false);
+            return;
+        }
+
+        const fileUrl = getSupabaseFileUrl(item?.file).uri;
+        const localUrl = await downloadFile(fileUrl);
+        
+        if (!localUrl || !(await FileSystem.getInfoAsync(localUrl)).exists) {
+            await Share.share({ message });
+            setShareLoading(false);
+            return;
+        }
+
+        setShareLoading(false);
+
+        if (Platform.OS === 'android') {
+            await Clipboard.setStringAsync(message);
+            
+            ToastAndroid.show('Text copied to clipboard! Paste after selecting app.', ToastAndroid.LONG);
+            
+            await Sharing.shareAsync(localUrl, {
+                mimeType: item?.file.includes('postVideos') ? 'video/mp4' : 'image/jpeg',
+                UTI: item?.file.includes('postVideos') ? 'public.movie' : 'public.image',
+            });
+        } else {
+            await Sharing.shareAsync(localUrl, {
+                mimeType: item?.file.includes('postVideos') ? 'video/mp4' : 'image/jpeg',
+                UTI: item?.file.includes('postVideos') ? 'public.movie' : 'public.image',
+                dialogTitle: message
+            });
+        }
+    } catch (error) {
+        Alert.alert('Share Error', 'Could not share this post. Please try again.');
+        setShareLoading(false);
+    }
+};
 
     const getLocationName = (locationId) => {
         const location = LOCATIONS.find(loc => loc.id === parseInt(locationId));
@@ -79,7 +157,6 @@ const PostCard = ({
             if (error) throw error;
             return true;
         } catch (error) {
-            console.error("Failed to update wishlist:", error);
             return false;
         }
     };
@@ -97,29 +174,22 @@ const PostCard = ({
             
             let newWishlist;
             if (isInWishlist) {
-
                 newWishlist = currentWishlist.filter(id => id !== locationIdString);
                 console.log('Removing from wishlist:', locationIdString);
             } else {
-
                 if (!currentWishlist.includes(locationIdString)) {
                     newWishlist = [...currentWishlist, locationIdString];
-                    console.log('Adding to wishlist:', locationIdString);
                 } else {
                     newWishlist = [...currentWishlist];
                 }
             }
             
-           
             const newWishlistString = newWishlist.join(',');
-            console.log('New wishlist string:', newWishlistString);
             
             const success = await updateWishlist(newWishlistString);
             
             if (success) {
-                
                 setIsInWishlist(!isInWishlist);
-                console.log('Updated isInWishlist to:', !isInWishlist);
                 
                 if (currentUser) {
                     currentUser.location_wishlist = newWishlistString;
@@ -132,18 +202,13 @@ const PostCard = ({
                     });
                 }
             }
-        } catch (error) {
-            console.error("Error toggling wishlist:", error);
         } finally {
             setIsUpdating(false);
         }
     };
 
     const createdAt = moment(item?.created_at).format('MMM D');
-    const likes = [];
-    const liked = false;
-    
-    const wishlistIconColor = 'white';
+    const liked = likes?.filter(like => like.userId === currentUser?.id)[0]? true: false;
     
     return (
         <View style={[styles.container]}>
@@ -168,9 +233,13 @@ const PostCard = ({
                     </View>
                 </View>
 
-                <TouchableOpacity onPress={openPostDetails}>
-                    <Icon name='more' size={hp(3.4)} />
-                </TouchableOpacity>
+                {
+                    showMoreIcon && (
+                        <TouchableOpacity onPress={openPostDetails}>
+                            <Icon name='more' size={hp(3.4)} />
+                        </TouchableOpacity>
+                    )
+                }
             </View>
 
             {/* post body & media */}
@@ -209,29 +278,38 @@ const PostCard = ({
             {/* Like,comment & share */}
             <View style={styles.footer}>
                 <View style={styles.footerButton}>
-                    <TouchableOpacity>
-                        <Icon name='heart' size={24} fill={liked? "red" : 'transparent'} color={liked? "red" : theme.colors.textDark}/>
+                    <TouchableOpacity onPress={onLike} disabled={likeLoading}>
+                        {likeLoading ? (
+                            <Loading size="small" />
+                        ) : (
+                            <Icon name='heart' size={24} 
+                                fill={item?.userLiked ? "red" : 'transparent'} 
+                                color={item?.userLiked ? "red" : theme.colors.textDark}/>
+                        )}
                     </TouchableOpacity>
-                    <Text style={styles.count}>
-                        {
-                            likes?.length
-                        }
-                    </Text>
+                    <Text style={styles.count}>{item?.likeCount || 0}</Text>
                 </View>
+                
                 <View style={styles.footerButton}>
-                    <TouchableOpacity>
+                    <TouchableOpacity onPress={openPostDetails}>
                         <Icon name='comment' size={24} color={theme.colors.textDark}/>
                     </TouchableOpacity>
                     <Text style={styles.count}>
                         {
-                            0
+                            item?.commentCount
                         }
                     </Text>
                 </View>
                 <View style={styles.footerButton}>
-                    <TouchableOpacity>
-                        <Icon name='share4' size={25} color={theme.colors.textDark}/>
-                    </TouchableOpacity>
+                    {
+                        shareLoading ? (
+                            <Loading size="small" />
+                        ) : (
+                            <TouchableOpacity onPress={onShare}>
+                                <Icon name='share4' size={25} color={theme.colors.textDark}/>
+                            </TouchableOpacity>
+                        )
+                    }
                 </View>
                 
                 {/* Location Wishlist Button - Only shown if post has a location */}
@@ -241,8 +319,8 @@ const PostCard = ({
                             <Icon 
                                 name="bookmark"
                                 size={25} 
-                                color={wishlistIconColor}
-                                fill={isInWishlist ? wishlistIconColor : 'transparent'}
+                                color='white'
+                                fill={isInWishlist ? 'white' : 'transparent'}
                             />
                         </TouchableOpacity>
                     </View>
