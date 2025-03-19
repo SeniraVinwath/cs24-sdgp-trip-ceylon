@@ -37,6 +37,7 @@ import Comment from './Comment';
 import Globe from './Globe';
 import Share4 from './Share4';
 import Bookmark from './Bookmark';
+import Send from './Send';
 
 const icons = {
     home: Home,
@@ -75,6 +76,7 @@ const icons = {
     globe:Globe,
     share4: Share4,
     bookmark: Bookmark,
+    send: Send,
 };
 
 const Icon = ({ name, ...props }) => {
