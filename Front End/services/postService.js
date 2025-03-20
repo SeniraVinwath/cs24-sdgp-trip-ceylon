@@ -5,6 +5,8 @@ export const createOrUpdatePost = async (post) => {
     try {
         const formattedPost = {};
         
+        if (post.id !== undefined) formattedPost.id = post.id;
+        
         if (post.body !== undefined) formattedPost.body = post.body;
         if (post.userid !== undefined) formattedPost.userId = post.userid;
         if (post.locationid !== undefined) formattedPost.locationId = post.locationid;
@@ -45,6 +47,37 @@ export const fetchPosts = async (currentUserId, limit=10) => {
             comment_count:comments(count)
         `)
         .order('created_at', {ascending: false})
+        .limit(limit);
+
+        if(error) {
+            return {success: false, msg: 'Could not fetch posts'};
+        }
+
+        const transformed = data.map(post => ({
+            ...post,
+            likeCount: post.postLikes?.length || 0,
+            userLiked: post.postLikes?.some(like => like.userId === currentUserId) || false,
+            commentCount: post.comment_count?.[0]?.count || 0
+        }));
+
+        return {success: true, data: transformed};
+    }catch(error){
+        return {success: false, msg: 'Could not fetch posts'};
+    }
+}
+
+export const fetchUserPosts = async (currentUserId, limit=10) => {
+    try{
+        const {data, error} = await supabase
+        .from('posts')
+        .select(`
+            *,
+            traveler: travelers(id,user_name,image),
+            postLikes (*),
+            comment_count:comments(count)
+        `)
+        .order('created_at', {ascending: false})
+        .eq('userId', currentUserId)
         .limit(limit);
 
         if(error) {
@@ -150,5 +183,19 @@ export const removeComment = async (commentId) => {
         return { success: true, data: {commentId}};
     } catch (error) {
         return { success: false, msg: 'Could not remove your comment' };
+    }
+}
+
+export const removePost = async (postId) => {
+    try {
+        const { error } = await supabase
+        .from('posts')
+        .delete()
+        .eq('id', postId)
+
+        if (error) return { success: false, msg: 'Could not delete your post' };
+        return { success: true, data: {postId}};
+    } catch (error) {
+        return { success: false, msg: 'Could not delete your post' };
     }
 }
