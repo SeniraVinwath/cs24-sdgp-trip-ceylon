@@ -1,7 +1,7 @@
 import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native'
 import React, { useEffect, useState } from 'react'
 import { useLocalSearchParams, useRouter } from 'expo-router'
-import { createComment, fetchPostDetails, removeComment } from '../../services/postService';
+import { createComment, fetchPostDetails, removeComment, removePost } from '../../services/postService';
 import { theme } from '../../constants/theme';
 import { hp, wp } from '../../helpers/common';
 import PostCard from '../../components/PostCard';
@@ -81,6 +81,20 @@ const PostDetails = () => {
         }
     }
 
+    const onDeletePost = async (item)=>{
+        let res = await removePost(post.id);
+        if(res.success){
+            router.back();
+        } else {
+            Alert.alert('Post', res.msg);
+        }
+    }
+
+    const onEditPost = async (item)=>{
+        router.back();
+        router.push({pathname: 'newPost', params: {...item}})
+    }
+
     if(startLoading) {
         return (
             <View style={styles.center}>
@@ -100,7 +114,7 @@ const PostDetails = () => {
   return (
     <View style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.list}>
-        <PostCard item={{...post, commentCount: post?.comments?.length }} currentUser={user} router={router} showMoreIcon={false}/>
+        <PostCard item={{...post, commentCount: post?.comments?.length }} currentUser={user} router={router} showMoreIcon={false} showDelete={true} onDelete={onDeletePost} onEdit={onEditPost}/>
 
         {/* comment input */}
         <View style={styles.inputContainer}>
