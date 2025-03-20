@@ -33,6 +33,29 @@ const Home = () => {
         newPost.userLiked = false;
         setPosts(prevPosts => [newPost, ...prevPosts]);
       }
+
+      if(payload.eventType=='DELETE' && payload.old.id){
+        setPosts(prevPosts=>{
+          let updatedPosts = prevPosts.filter(post=> post.id!=payload.old.id);
+          return updatedPosts;
+        })
+      }
+
+      if(payload.eventType === 'UPDATE' && payload?.new?.id){
+        setPosts(prevPosts=>{
+          let updatedPosts = prevPosts.map(post=>{
+            if(post.id==payload.new.id){
+              post.body = payload.new.body;
+              post.file = payload.new.file;
+              post.locationId = payload.new.locationId;
+            }
+            return post;
+          });
+
+          return updatedPosts;
+
+        })
+      }
     }
 
     useEffect(() => {
@@ -299,9 +322,11 @@ const styles = StyleSheet.create({
       width: 0,
       height: 2
     },
-    shadowOpacity: 0.25,
+    shadowOpacity: 0.95,
     shadowRadius: 3.84,
     elevation: 5,
+    borderWidth: 2,
+    borderColor: theme.colors.textDark2
   },
   dropdownItem: {
     flexDirection: 'row',
