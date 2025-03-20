@@ -238,7 +238,7 @@ const Home = () => {
             </View>
           ) : (
             <View style={{marginVertical: 30}}>
-              <Text style={styles.noPosts}>You're all caught up for now from Trip Ceylon !</Text>
+              <Text style={styles.noPosts}>You're all caught up for now from TRIP CEYLON</Text>
             </View>
           )}
         />
@@ -285,9 +285,13 @@ const styles = StyleSheet.create({
     paddingTop: 20,
   },
   noPosts: {
-    fontSize: hp(1.5),
+    fontSize: hp(1.65),
+    fontWeight: '300',
     textAlign: 'center',
     color: theme.colors.textDark2,
+    paddingBottom: 25,
+    borderBottomWidth: 2,
+    borderBottomColor: 'rgba(50, 205, 50, 0.2)',
   },
   pill: {
     position: 'absolute',
@@ -326,7 +330,7 @@ const styles = StyleSheet.create({
     shadowRadius: 3.84,
     elevation: 5,
     borderWidth: 2,
-    borderColor: theme.colors.textDark2
+    borderColor: 'rgba(50, 205, 50, 0.2)'
   },
   dropdownItem: {
     flexDirection: 'row',
