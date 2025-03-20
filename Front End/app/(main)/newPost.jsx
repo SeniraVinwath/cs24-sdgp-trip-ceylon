@@ -27,6 +27,7 @@ const NewPost = () => {
     const [locationId, setLocationId] = useState(null);
     const [showLocationPicker, setShowLocationPicker] = useState(false);
     const [editorReady, setEditorReady] = useState(false);
+    const [isInitialized, setIsInitialized] = useState(false);
     const insets = useSafeAreaInsets();
     const post = useLocalSearchParams();
 
@@ -46,17 +47,22 @@ const NewPost = () => {
     }, [post?.locationId]);
 
     useEffect(() => {
-      if (post && editorReady) {
+      // Only initialize once and only if we have post data
+      if (!isInitialized && post?.id && editorReady) {
           bodyref.current = post.body || '';
-          setFile(post.file || null);
+          if (post.file) {
+            setFile(post.file);
+          }
 
           setTimeout(() => {
               if (editorRef.current?.setContentHTML) {
                   editorRef.current.setContentHTML(post.body || '');
               }
           }, 100);
+          
+          setIsInitialized(true);
       }
-    }, [post, editorReady]);
+    }, [post, editorReady, isInitialized]);
 
     const platformSpacing = {
       paddingBottom: Platform.select({
@@ -66,25 +72,24 @@ const NewPost = () => {
     };
 
     const onPick = async (isImage) => {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Denied', 'Please allow media access to upload files.');
+        return;
+      }
       let mediaConfig = {
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: isImage ? ImagePicker.MediaTypeOptions.Images : ImagePicker.MediaTypeOptions.Videos,
         allowsEditing: true,
         aspect: [4, 3],
         quality: 0.7,
-      }
-      if(!isImage){
-        mediaConfig = {
-          mediaTypes: ImagePicker.MediaTypeOptions.Videos,
-          allowsEditing: true,
-        }
-      }
-
+      };
+      
       let result = await ImagePicker.launchImageLibraryAsync(mediaConfig);
-
-      if(!result.canceled){
+      if (!result.canceled) {
+        console.log('Selected file:', result.assets[0]);
         setFile(result.assets[0]);
       }
-    }
+    };
 
     const isLocalFile = file => {
       if(!file) return null;
@@ -131,6 +136,7 @@ const NewPost = () => {
     }
 
     const handleRemoveFile = () => {
+      console.log("Removing file");
       setFile(null);
     }
 
@@ -166,6 +172,8 @@ const NewPost = () => {
         Alert.alert('Post', res.msg);
       }
     }
+
+    console.log('Current file in render:', file);
 
   return (
     <ScreenWrapper bg="#303030">
@@ -500,4 +508,4 @@ const styles = StyleSheet.create({
   selectedLocationText: {
     fontWeight: theme.fonts.bold,
   }
-});
+})
