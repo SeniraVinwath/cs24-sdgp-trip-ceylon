@@ -1,5 +1,5 @@
 import { Alert, Image, Modal, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View, Platform } from 'react-native'
-import React, { useRef, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import ScreenWrapper from '../../components/ScreenWrapper'
 import Head from '../../components/Head'
 import { hp, wp } from '../../helpers/common'
@@ -7,7 +7,7 @@ import { theme } from '../../constants/theme'
 import Avatar from '../../components/Avatar'
 import { useAuth } from '../../contexts/AuthContext'
 import RichTextEditor from '../../components/RichTextEditor'
-import { useRouter } from 'expo-router'
+import { useLocalSearchParams, useRouter } from 'expo-router'
 import Icon from '../../assets/icons'
 import Button from '../../components/Button'
 import * as ImagePicker from 'expo-image-picker'
@@ -26,7 +26,37 @@ const NewPost = () => {
     const [file, setFile] = useState(null);
     const [locationId, setLocationId] = useState(null);
     const [showLocationPicker, setShowLocationPicker] = useState(false);
+    const [editorReady, setEditorReady] = useState(false);
     const insets = useSafeAreaInsets();
+    const post = useLocalSearchParams();
+
+    useEffect(() => {
+      if (editorRef.current) {
+        setEditorReady(true);
+      }
+    }, [editorRef]);
+
+    useEffect(() => {
+      if (post?.locationId) {
+          const numericId = parseInt(post.locationId, 10);
+          if (!isNaN(numericId)) {
+              setLocationId(numericId);
+          }
+      }
+    }, [post?.locationId]);
+
+    useEffect(() => {
+      if (post && editorReady) {
+          bodyref.current = post.body || '';
+          setFile(post.file || null);
+
+          setTimeout(() => {
+              if (editorRef.current?.setContentHTML) {
+                  editorRef.current.setContentHTML(post.body || '');
+              }
+          }, 100);
+      }
+    }, [post, editorReady]);
 
     const platformSpacing = {
       paddingBottom: Platform.select({
@@ -69,7 +99,6 @@ const NewPost = () => {
         return file.type;
       }
 
-      //check remote
       if(file.includes('postImages')){
         return 'image';
       }
@@ -91,7 +120,7 @@ const NewPost = () => {
     }
 
     const getSelectedLocationName = () => {
-      if (!locationId) return "Add Location";
+      if (locationId === null) return "Add Location";
       const location = LOCATIONS.find(loc => loc.id === locationId);
       return location ? location.name : "Add Location";
     }
@@ -118,7 +147,10 @@ const NewPost = () => {
         locationid: locationId
       }
 
-      //create post
+      if(post && post.id) {
+        data.id = parseInt(post.id, 10);
+      }
+
       setLoading(true);
       let res = await createOrUpdatePost(data);
       setLoading(false);
@@ -126,7 +158,9 @@ const NewPost = () => {
         setFile(null);
         setLocationId(null);
         bodyref.current = '';
-        editorRef.current?.setContentHTML('');
+        if(editorRef.current?.setContentHTML) {
+          editorRef.current.setContentHTML('');
+        }
         router.back();
       }else{
         Alert.alert('Post', res.msg);
@@ -157,7 +191,10 @@ const NewPost = () => {
           </View>
 
           <View style={styles.textEditor}>
-            <RichTextEditor editorRef={editorRef} onChange={body=> bodyref.current = body}/>
+            <RichTextEditor 
+              editorRef={editorRef} 
+              onChange={body => bodyref.current = body}
+            />
           </View>
 
           {/* Location selector button */}
@@ -234,7 +271,7 @@ const NewPost = () => {
         <View style={styles.buttonContainer}>
           <Button 
             buttonStyle={styles.postButton} 
-            title='Post' 
+            title={post && post.id? 'Update': 'Post'} 
             loading={loading} 
             hasshadow={false} 
             onPress={onSubmit}
