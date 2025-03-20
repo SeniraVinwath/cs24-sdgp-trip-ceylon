@@ -41,6 +41,9 @@ const PostCard = ({
     onWishlistUpdate,
     refreshPosts,
     showMoreIcon = true,
+    showDelete = false,
+    onDelete=()=>{},
+    onEdit=()=>{}
 }) => {
 
     const [isInWishlist, setIsInWishlist] = useState(false);
@@ -161,6 +164,21 @@ const onShare = async () => {
         }
     };
 
+    const handlePostDelete = ()=>{
+        Alert.alert('Confirm', "Are you sure you want to delete this post?", [
+            {
+                text: 'Cancel',
+                onPress: ()=> console.log('modal cancelled'),
+                style: 'cancel'
+            },
+            {
+                text: 'Delete',
+                onPress: ()=> onDelete(item),
+                style: 'destructive'
+            }
+        ])
+    }
+
     const handleWishlistToggle = async () => {
         if (!item?.locationId || !currentUser || isUpdating) return;
 
@@ -238,6 +256,19 @@ const onShare = async () => {
                         <TouchableOpacity onPress={openPostDetails}>
                             <Icon name='more' size={hp(3.4)} />
                         </TouchableOpacity>
+                    )
+                }
+
+                {
+                    showDelete && currentUser.id == item?.userId && (
+                        <View style={styles.actions}>
+                            <TouchableOpacity onPress={() => onEdit(item)}>
+                                <Icon name='edit' size={hp(2)} />
+                            </TouchableOpacity>
+                            <TouchableOpacity onPress={handlePostDelete}>
+                                <Icon name='delete' size={hp(2.2)} color={theme.colors.roseLight} />
+                            </TouchableOpacity>
+                        </View>
                     )
                 }
             </View>
@@ -334,64 +365,87 @@ export default PostCard
 
 const styles = StyleSheet.create({
     container: {
-        gap: 10,
+        gap: 12,
         marginBottom: 25,
-        padding: 10,
-        paddingVertical: 2,
-        paddingBottom: 20,
-        paddingTop: 20,
-        backgroundColor: '#353535',
-        borderRadius: theme.radius.xl,
+        padding: 15,
+        paddingVertical: 20,
+        backgroundColor: '#2A2A2A',
+        borderRadius: theme.radius.xxl,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+        elevation: 6,
     },
     header: {
         flexDirection: 'row',
-        justifyContent: 'space-between'
+        justifyContent: 'space-between',
+        alignItems: 'center',
     },
     userInfo: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 8
+        gap: 10,
+    },
+    avatar: {
+        borderWidth: 2,
+        borderColor: theme.colors.primary,
+        shadowColor: theme.colors.primary,
+        shadowOpacity: 0.4,
+        shadowRadius: 4,
     },
     userName: {
         color: theme.colors.textWhite,
-        fontWeight: theme.fonts.medium,
+        fontWeight: theme.fonts.semibold,
+        fontSize: hp(2),
+        letterSpacing: 0.3,
     },
     postTime: {
-        fontSize: hp(1.4),
+        fontSize: hp(1.5),
         color: theme.colors.shadowcolor,
         fontWeight: theme.fonts.medium,
     },
     content: {
-        gap: 10,
+        gap: 12,
     },
     mediaContainer: {
-        marginHorizontal: -10,
+        marginHorizontal: -15,
         width: wp(100),
         alignSelf: 'center',
         paddingHorizontal: wp(4),
     },
     mediaWrapper: {
-        borderRadius: theme.radius.xl,
+        borderRadius: theme.radius.xxl,
         borderCurve: 'continuous',
         overflow: 'hidden',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.1)',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 6,
     },
     postMedia: {
         height: hp(40),
         width: '100%',
+        backgroundColor: '#1A1A1A',
     },
     postBody: {
         marginLeft: 5,
+        paddingVertical: 5,
     },
     footer: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 15
+        gap: 20,
+        paddingTop: 10,
+        borderTopWidth: 1,
+        borderTopColor: 'rgba(255,255,255,0.1)',
     },
     footerButton: {
-        marginLeft: 5,
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 4
+        gap: 6,
     },
     wishlistButton: {
         marginLeft: 'auto',
@@ -399,25 +453,45 @@ const styles = StyleSheet.create({
     actions: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 18,
+        gap: 20,
     },
     count: {
         color: theme.colors.textWhite,
-        fontSize: hp(1.8)
+        fontSize: hp(1.9),
+        fontWeight: theme.fonts.medium,
     },
     locationContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 4,
+        gap: 6,
     },
     locationText: {
-        fontSize: hp(1.4),
+        fontSize: hp(1.5),
         color: theme.colors.shadowcolor,
-        fontWeight: theme.fonts.medium,
+        fontWeight: theme.fonts.semibold,
     },
     locationContainer2: {
         flexDirection: 'row',
-        gap: 5,
+        gap: 6,
         alignItems: 'center',
-    }
-})
+        backgroundColor: 'rgba(255,255,255,0.1)',
+        paddingHorizontal: 8,
+        paddingVertical: 2,
+        borderRadius: theme.radius.sm,
+    },
+    moreButton: {
+        padding: 5,
+        backgroundColor: 'rgba(255,255,255,0.1)',
+        borderRadius: theme.radius.sm,
+    },
+    actionButton: {
+        padding: 5,
+        backgroundColor: 'rgba(255,255,255,0.1)',
+        borderRadius: theme.radius.sm,
+    },
+    iconButton: {
+        padding: 5,
+        borderRadius: theme.radius.sm,
+        backgroundColor: 'rgba(255,255,255,0.05)',
+    },
+});
