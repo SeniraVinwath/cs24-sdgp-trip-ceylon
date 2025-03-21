@@ -1,4 +1,4 @@
-import { Alert, Button, Pressable, StyleSheet, Text, View, Animated, FlatList } from 'react-native'
+import { Alert, Button, Pressable, StyleSheet, Text, View, Animated, FlatList, Platform, Dimensions } from 'react-native'
 import React, { useState, useRef, useEffect } from 'react'
 import ScreenWrapper from '../../components/ScreenWrapper'
 import { useAuth } from '../../contexts/AuthContext'
@@ -12,6 +12,7 @@ import PostCard from '../../components/PostCard'
 import Loading from '../../components/Loading'
 import { supabase } from '../../lib/supabase'
 import { getUserData } from '../../services/userService'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 var limit = 0;
 
@@ -19,10 +20,19 @@ const Home = () => {
     const [showDropdown, setShowDropdown] = useState(false);
     const {user, setAuth} = useAuth();
     const router = useRouter();
+    const insets = useSafeAreaInsets();
 
     const [posts, setPosts] = useState([]);
     const [hasMore, setHasMore] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
+    const [notificationCount, setNotificationCount] = useState(0);
+
+    const platformSpacing = { 
+      paddingBottom: Platform.select({ 
+        ios: Math.max(insets.bottom, hp(2)), 
+        android: Math.max(insets.bottom, hp(2)), 
+      }),
+    };
 
     const handlePostEvent = async (payload) => {
       if(payload.eventType === 'INSERT' && payload?.new?.id){
@@ -58,6 +68,13 @@ const Home = () => {
       }
     }
 
+    const handleNewNotification = async (payload) =>{
+      console.log('got new notification: ', payload);
+      if(payload.eventType=='INSERT' && payload.new.id){
+        setNotificationCount(prev=> prev+1);
+      }
+    }
+
     useEffect(() => {
       const postChannel = supabase
         .channel('posts')
@@ -71,10 +88,16 @@ const Home = () => {
           () => refreshPosts() 
         )
         .subscribe();
+      
+        const notificationChannel = supabase
+        .channel('notifications')
+        .on('postgres_changes', {event: 'INSERT', schema: 'public', table: 'notifications', filter: `recieverId=eq.${user.id}`}, handleNewNotification)
+        .subscribe()
 
       return () => {
         supabase.removeChannel(postChannel);
         supabase.removeChannel(likeChannel);
+        supabase.removeChannel(notificationChannel);
       }
     }, []);
 
@@ -138,18 +161,37 @@ const Home = () => {
 
   return (
     <ScreenWrapper bg="#303030">
-      <View style={styles.container}>
+      <View style={[styles.container, { paddingLeft: wp(4) + insets.left, paddingRight: wp(4) + insets.right }]}>
         {/* header */}
         <View style={styles.header}>
           <Text style={styles.title}>Trip Ceylon</Text>
           <View style={styles.icons}>
-            <Pressable onPress={()=> router.push('notifications')}>
+            <Pressable 
+              onPress={()=> {
+                setNotificationCount(0);
+                router.push('notifications');
+              }}
+              hitSlop={{top: hp(1), bottom: hp(1), left: wp(1), right: wp(1)}}
+            >
               <Icon name="notification" size={hp(3.2)} strokeWidth={2}/>
+              {
+                notificationCount>0 && (
+                  <View style={styles.pill}>
+                    <Text style={styles.pillText}>{notificationCount}</Text>
+                  </View>
+                )
+              }
             </Pressable>
-            <Pressable onPress={()=> router.push('newPost')}>
+            <Pressable 
+              onPress={()=> router.push('newPost')}
+              hitSlop={{top: hp(1), bottom: hp(1), left: wp(1), right: wp(1)}}
+            >
               <Icon name="addNew" size={hp(3.2)} strokeWidth={2}/>
             </Pressable>
-            <Pressable onPress={toggleDropdown}>
+            <Pressable 
+              onPress={toggleDropdown}
+              hitSlop={{top: hp(1), bottom: hp(1), left: wp(1), right: wp(1)}}
+            >
               <Icon name={showDropdown ? "arrowUp" : "arrowDown"} size={hp(3.2)} strokeWidth={2}/>
             </Pressable>
           </View>
@@ -174,6 +216,7 @@ const Home = () => {
                     })
                   }
                 ],
+                right: wp(4) + (Platform.OS === 'ios' ? insets.right : 0)
               }
             ]}
           >
@@ -181,6 +224,7 @@ const Home = () => {
               <Pressable 
                 style={styles.dropdownItem} 
                 onPress={() => handleDropdownOption('profile')}
+                hitSlop={{top: hp(0.5), bottom: hp(0.5), left: wp(0.5), right: wp(0.5)}}
               >
                 <Avatar
                   uri={user?.image}
@@ -193,6 +237,7 @@ const Home = () => {
               <Pressable 
                 style={styles.dropdownItem} 
                 onPress={() => handleDropdownOption('luggage')}
+                hitSlop={{top: hp(0.5), bottom: hp(0.5), left: wp(0.5), right: wp(0.5)}}
               >
                 <Icon name="luggage" size={hp(3.2)} strokeWidth={2}/>
               </Pressable>
@@ -200,6 +245,7 @@ const Home = () => {
               <Pressable 
                 style={styles.dropdownItem} 
                 onPress={() => handleDropdownOption('connections')}
+                hitSlop={{top: hp(0.5), bottom: hp(0.5), left: wp(0.5), right: wp(0.5)}}
               >
                 <Icon name="connect2" size={hp(3.2)} strokeWidth={2}/>
               </Pressable>
@@ -207,6 +253,7 @@ const Home = () => {
               <Pressable 
                 style={[styles.dropdownItem, styles.lastDropdownItem]} 
                 onPress={() => handleDropdownOption('itinerary')}
+                hitSlop={{top: hp(0.5), bottom: hp(0.5), left: wp(0.5), right: wp(0.5)}}
               >
                 <Icon name="itinerary" size={hp(3.2)} strokeWidth={2}/>
               </Pressable>
@@ -220,7 +267,7 @@ const Home = () => {
           refreshing={refreshing}
           onRefresh={refreshPosts}
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.listStyle}
+          contentContainerStyle={[styles.listStyle, platformSpacing]}
           keyExtractor={item => item.id.toString()}
           renderItem={({item}) => (
             <PostCard
@@ -233,11 +280,11 @@ const Home = () => {
           onEndReached={getPosts}
           onEndReachedThreshold={0.5}
           ListFooterComponent={hasMore ? (
-            <View style={{marginVertical: posts.length === 0 ? 200 : 30}}>
+            <View style={{marginVertical: posts.length === 0 ? hp(20) : hp(3)}}>
               <Loading/>
             </View>
           ) : (
-            <View style={{marginVertical: 30}}>
+            <View style={{marginVertical: hp(3)}}>
               <Text style={styles.noPosts}>You're all caught up for now from TRIP CEYLON</Text>
             </View>
           )}
@@ -252,15 +299,15 @@ export default Home
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingHorizontal: wp(4),
     marginTop: hp(1),
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 10,
-    marginHorizontal: wp(2)
+    marginBottom: hp(1),
+    marginHorizontal: wp(2),
+    paddingVertical: hp(0.5),
   },
   title: {
     color: theme.colors.textWhite,
@@ -279,30 +326,28 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    gap: 18
+    gap: Platform.OS === 'ios' ? wp(4.5) : wp(4),
   },
   listStyle: {
-    paddingTop: 20,
+    paddingTop: hp(2),
+    paddingHorizontal: wp(0.5),
   },
   noPosts: {
     fontSize: hp(1.65),
     fontWeight: '300',
     textAlign: 'center',
     color: theme.colors.textDark2,
-    paddingBottom: 25,
-    borderBottomWidth: 2,
-    borderBottomColor: 'rgba(50, 205, 50, 0.2)',
   },
   pill: {
     position: 'absolute',
-    right: -10,
-    top : -4,
+    right: -wp(2.5),
+    top: -hp(0.4),
     height: hp(2.2),
     width: hp(2.2),
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 20,
-    backgroundColor: theme.colors.roseLight
+    borderRadius: hp(2.2) / 2,
+    backgroundColor: 'red'
   },
   pillText: {
     color: 'white',
@@ -312,15 +357,14 @@ const styles = StyleSheet.create({
   dropdownContainer: {
     position: 'absolute',
     top: hp(6),
-    right: wp(4),
     zIndex: 999,
     transformOrigin: 'top', 
   },
   dropdownContent: {
     backgroundColor: '#424242',
     borderRadius: theme.radius.xxxl,
-    padding: hp(1),
-    width: 'contentwidth',
+    paddingH: hp(1),
+    width: 'auto',
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
@@ -337,6 +381,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: hp(2.2),
+    paddingHorizontal: wp(3),
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(255,255,255,0.1)',
   },

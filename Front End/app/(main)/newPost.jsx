@@ -31,6 +31,22 @@ const NewPost = () => {
     const insets = useSafeAreaInsets();
     const post = useLocalSearchParams();
 
+    const platformSpacing = {
+      paddingBottom: Platform.select({
+        ios: Math.max(insets.bottom, hp(2)),
+        android: Math.max(insets.bottom, hp(2)),
+      }),
+    };
+    
+    const horizontalPadding = wp(5);
+    
+    const touchableHitSlop = {
+      top: hp(1.5),
+      bottom: hp(1.5),
+      left: wp(1.5),
+      right: wp(1.5)
+    };
+
     useEffect(() => {
       if (editorRef.current) {
         setEditorReady(true);
@@ -47,7 +63,6 @@ const NewPost = () => {
     }, [post?.locationId]);
 
     useEffect(() => {
-      // Only initialize once and only if we have post data
       if (!isInitialized && post?.id && editorReady) {
           bodyref.current = post.body || '';
           if (post.file) {
@@ -63,13 +78,6 @@ const NewPost = () => {
           setIsInitialized(true);
       }
     }, [post, editorReady, isInitialized]);
-
-    const platformSpacing = {
-      paddingBottom: Platform.select({
-        ios: Math.max(insets.bottom, hp(2)),
-        android: Math.max(insets.bottom, hp(2)),
-      }),
-    };
 
     const onPick = async (isImage) => {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -94,7 +102,6 @@ const NewPost = () => {
     const isLocalFile = file => {
       if(!file) return null;
       if(typeof file == 'object') return true;
-
       return false;
     }
 
@@ -173,8 +180,6 @@ const NewPost = () => {
       }
     }
 
-    console.log('Current file in render:', file);
-
   return (
     <ScreenWrapper bg="#303030">
       <View style={[styles.container, platformSpacing]}>
@@ -185,7 +190,7 @@ const NewPost = () => {
           bounces={Platform.OS === 'ios'}
           overScrollMode={Platform.OS === 'android' ? 'never' : undefined}
         >
-          {/* avatar */}
+          {/* User Info Header */}
           <View style={styles.header}>
             <Avatar uri={user?.image} size={hp(6)} rounded={theme.radius.xl}/>
             <View style={styles.userInfoContainer}>
@@ -198,6 +203,7 @@ const NewPost = () => {
             </View>
           </View>
 
+          {/* Rich Text Editor */}
           <View style={styles.textEditor}>
             <RichTextEditor 
               editorRef={editorRef} 
@@ -210,6 +216,7 @@ const NewPost = () => {
             style={styles.locationSelector} 
             onPress={toggleLocationPicker}
             activeOpacity={0.7}
+            hitSlop={touchableHitSlop}
           >
             <Icon name="location" size={wp(5.5)} />
             <Text style={styles.locationText}>
@@ -218,56 +225,53 @@ const NewPost = () => {
             <Icon name="arrowDown" size={wp(4.5)} />
           </TouchableOpacity>
 
-          {
-            file && (
-              <View style={styles.file}>
-                {
-                  getFileType(file) == 'video' ? (
-                    <Video 
-                      style={styles.mediaContent} 
-                      source={{uri: getFileUri(file)}} 
-                      useNativeControls 
-                      resizeMode='cover' 
-                      isLooping
-                    />
-                  ):(
-                    <Image 
-                      source={{uri: getFileUri(file)}} 
-                      resizeMode='cover' 
-                      style={styles.mediaContent}
-                    />
-                  )
-                }
+          {/* Media Preview */}
+          {file && (
+            <View style={styles.file}>
+              {getFileType(file) === 'video' ? (
+                <Video 
+                  style={styles.mediaContent} 
+                  source={{uri: getFileUri(file)}} 
+                  useNativeControls 
+                  resizeMode='cover' 
+                  isLooping
+                />
+              ) : (
+                <Image 
+                  source={{uri: getFileUri(file)}} 
+                  resizeMode='cover' 
+                  style={styles.mediaContent}
+                />
+              )}
 
-                <Pressable 
-                  style={styles.closeIcon} 
-                  onPress={handleRemoveFile}
-                  hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}
-                >
-                  <Icon name='delete' size={wp(5.5)} />
-                </Pressable>
-              </View>
-            )
-          }
+              <Pressable 
+                style={styles.closeIcon} 
+                onPress={handleRemoveFile}
+                hitSlop={touchableHitSlop}
+              >
+                <Icon name='delete' size={wp(5.5)} />
+              </Pressable>
+            </View>
+          )}
 
-          {/* Only show media selector when no file is selected */}
+          {/* Media Selector (Only shown when no file is selected) */}
           {!file && (
             <View style={styles.media}>
               <Text style={styles.addImageText}>Photo / Video</Text>
               <View style={styles.mediaIcons}>
                 <TouchableOpacity 
-                  onPress={()=> onPick(true)}
+                  onPress={() => onPick(true)}
                   style={styles.mediaIconButton}
                   activeOpacity={0.7}
-                  hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}
+                  hitSlop={touchableHitSlop}
                 >
                   <Icon name="image" size={wp(7.5)} />
                 </TouchableOpacity>
                 <TouchableOpacity 
-                  onPress={()=> onPick(false)}
+                  onPress={() => onPick(false)}
                   style={styles.mediaIconButton}
                   activeOpacity={0.7}
-                  hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}
+                  hitSlop={touchableHitSlop}
                 >
                   <Icon name="video" size={wp(8)} />
                 </TouchableOpacity>
@@ -276,10 +280,11 @@ const NewPost = () => {
           )}
         </ScrollView>
 
+        {/* Post Button */}
         <View style={styles.buttonContainer}>
           <Button 
             buttonStyle={styles.postButton} 
-            title={post && post.id? 'Update': 'Post'} 
+            title={post && post.id ? 'Update' : 'Post'} 
             loading={loading} 
             hasshadow={false} 
             onPress={onSubmit}
@@ -301,7 +306,7 @@ const NewPost = () => {
               <Text style={styles.modalTitle}>Select Location</Text>
               <TouchableOpacity 
                 onPress={() => setShowLocationPicker(false)}
-                hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}
+                hitSlop={touchableHitSlop}
               >
                 <Icon name="delete" size={wp(6)} />
               </TouchableOpacity>
@@ -312,6 +317,7 @@ const NewPost = () => {
               showsVerticalScrollIndicator={false}
               bounces={Platform.OS === 'ios'}
               overScrollMode={Platform.OS === 'android' ? 'never' : undefined}
+              contentContainerStyle={styles.locationListContent}
             >
               <TouchableOpacity 
                 style={[
@@ -365,19 +371,14 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingTop: hp(1),
-    paddingBottom: hp(2),
-    gap: hp(2),
-  },
-  title: {
-    fontSize: hp(2.5),
-    fontWeight: theme.fonts.semibold,
-    color: theme.colors.textWhite,
-    textAlign: 'center',
+    paddingBottom: hp(3),
+    gap: hp(2.5),
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: wp(3),
+    paddingVertical: hp(1),
   },
   userInfoContainer: {
     gap: hp(0.5),
@@ -394,13 +395,14 @@ const styles = StyleSheet.create({
   },
   textEditor: {
     width: '100%',
+    minHeight: hp(10),
   },
   media: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     borderWidth: 1.5,
-    padding: hp(1.5),
+    padding: hp(1.8),
     paddingHorizontal: wp(4.5),
     borderRadius: theme.radius.xl,
     borderCurve: 'continuous',
@@ -409,10 +411,10 @@ const styles = StyleSheet.create({
   mediaIcons: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: wp(3.5),
+    gap: wp(4),
   },
   mediaIconButton: {
-    padding: wp(1),
+    padding: wp(1.5),
   },
   addImageText: {
     fontSize: hp(1.9),
@@ -445,7 +447,7 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: theme.colors.darkLight,
     borderRadius: theme.radius.xl,
-    padding: hp(1.5),
+    padding: hp(1.8),
     paddingHorizontal: wp(4.5),
     gap: wp(2.5),
   },
@@ -456,12 +458,13 @@ const styles = StyleSheet.create({
   },
   buttonContainer: {
     width: '100%',
-    marginTop: hp(1),
-    marginBottom: Platform.OS === 'ios' ? hp(1) : hp(2),
+    marginTop: hp(1.5),
+    paddingHorizontal: wp(1),
   },
   postButton: {
     height: hp(6.2),
     width: '100%',
+    borderRadius: theme.radius.xl,
   },
   modalOverlay: {
     flex: 1,
@@ -474,7 +477,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#252525',
     borderRadius: theme.radius.lg,
     width: '90%',
-    maxHeight: '70%',
+    maxHeight: hp(70),
     overflow: 'hidden',
   },
   modalHeader: {
@@ -482,6 +485,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: wp(4),
+    paddingVertical: hp(2),
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.darkLight,
   },
@@ -491,10 +495,14 @@ const styles = StyleSheet.create({
     color: theme.colors.textWhite,
   },
   locationList: {
-    maxHeight: hp(40),
+    maxHeight: hp(45),
+  },
+  locationListContent: {
+    paddingBottom: hp(1),
   },
   locationItem: {
     padding: hp(1.8),
+    paddingHorizontal: wp(4),
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(255,255,255,0.1)',
   },

@@ -29,6 +29,15 @@ const EditProfile = () => {
         address: ''
     })
 
+    const horizontalPadding = wp(5)
+
+    const platformSpacing = {
+        paddingBottom: Platform.select({
+            ios: Math.max(insets.bottom, hp(2)),
+            android: Math.max(insets.bottom, hp(2)),
+        }),
+    }
+
     useEffect(() => {
         if (currentUser) {
             setUser({
@@ -86,23 +95,16 @@ const EditProfile = () => {
         }
     }
 
-    const platformSpacing = {
-        paddingBottom: Platform.select({
-            ios: Math.max(insets.bottom, hp(4)),
-            android: Math.max(insets.bottom, hp(4)),
-        }),
-    }
-
     let imageSource = user.image && typeof user.image == 'object' ? user.image.uri : getUserImageSrc(user.image)
     
     return (
         <ScreenWrapper bg="#303030">
-            <View style={[styles.container, { paddingHorizontal: wp(5) }]}>
+            <View style={[styles.container, { paddingHorizontal: horizontalPadding }]}>
                 <ScrollView 
                     style={styles.scrollView}
                     contentContainerStyle={[
                         styles.scrollViewContent,
-                        platformSpacing
+                        { paddingBottom: hp(12) }
                     ]}
                     showsVerticalScrollIndicator={false}
                 >
@@ -116,8 +118,12 @@ const EditProfile = () => {
                                 style={styles.avatar}
                                 contentFit="cover"
                             />
-                            <Pressable style={styles.cameraIcon} onPress={onPickImage}>
-                                <Icon name='camera' size={20} strokeWidth={2.5} />
+                            <Pressable 
+                                style={styles.cameraIcon} 
+                                onPress={onPickImage}
+                                hitSlop={{ top: hp(1), bottom: hp(1), left: wp(1), right: wp(1) }}
+                            >
+                                <Icon name='camera' size={hp(2.5)} strokeWidth={2.5} />
                             </Pressable>
                         </View>
                         
@@ -125,7 +131,7 @@ const EditProfile = () => {
                             <View style={styles.inputContainer}>
                                 <Text style={styles.label}>User Name</Text>
                                 <Input
-                                    icon={<Icon name='user' />}
+                                    icon={<Icon name='user' size={hp(2.2)} />}
                                     placeholder='Enter your new user name'
                                     value={user.user_name}
                                     onChangeText={(value) => setUser({ ...user, user_name: value })}
@@ -135,7 +141,7 @@ const EditProfile = () => {
                             <View style={styles.inputContainer}>
                                 <Text style={styles.label}>Full Name</Text>
                                 <Input
-                                    icon={<Icon name='conName' />}
+                                    icon={<Icon name='conName' size={hp(2.2)} />}
                                     placeholder='Enter your full name'
                                     value={user.full_name}
                                     onChangeText={(value) => setUser({ ...user, full_name: value })}
@@ -145,7 +151,7 @@ const EditProfile = () => {
                             <View style={styles.inputContainer}>
                                 <Text style={styles.label}>Address</Text>
                                 <Input
-                                    icon={<Icon name='location' />}
+                                    icon={<Icon name='location' size={hp(2.2)} />}
                                     placeholder='Enter your current Address'
                                     value={user.address}
                                     onChangeText={(value) => setUser({ ...user, address: value })}
@@ -166,8 +172,12 @@ const EditProfile = () => {
                     </View>
                 </ScrollView>
                 
-                {/* Fixed button at bottom */}
-                <View style={[styles.buttonContainer, platformSpacing]}>
+                {/* button at bottom */}
+                <View style={[
+                    styles.buttonContainer, 
+                    platformSpacing,
+                    { paddingHorizontal: horizontalPadding }
+                ]}>
                     <Button title='Update' loading={loading} onPress={onSubmit} />
                 </View>
             </View>
@@ -186,23 +196,23 @@ const styles = StyleSheet.create({
     },
     scrollViewContent: {
         flexGrow: 1,
-        paddingBottom: hp(10),
     },
     avatarContainer: {
         height: hp(14),
         width: hp(14),
         alignSelf: 'center',
-        marginBottom: hp(2),
+        marginVertical: hp(2.5),
     },
     label: {
-        fontSize: hp(1.5),
+        fontSize: hp(1.8),
         color: theme.colors.textWhite,
-        marginBottom: hp(0.75)
+        marginBottom: hp(0.75),
+        fontWeight: '500',
     },
     avatar: {
         width: '100%',
         height: '100%',
-        borderRadius: theme.radius.xxxl,
+        borderRadius: hp(7),
         borderCurve: 'continuous',
         borderWidth: 1,
         borderColor: theme.colors.darkLight,
@@ -211,9 +221,9 @@ const styles = StyleSheet.create({
     cameraIcon: {
         position: 'absolute',
         bottom: 0,
-        right: -10,
-        padding: 8,
-        borderRadius: 50,
+        right: -wp(2),
+        padding: hp(1),
+        borderRadius: hp(2.5),
         backgroundColor: '#424242',
         shadowColor: 'black',
         shadowOffset: { width: 0, height: 4 },
@@ -222,20 +232,20 @@ const styles = StyleSheet.create({
         elevation: 7,
     },
     form: {
-        marginTop: hp(2),
+        marginTop: hp(1),
         marginBottom: hp(2),
     },
     formInputs: {
-        gap: hp(2),
+        gap: hp(1.5),
     },
     inputContainer: {
-        marginBottom: hp(1),
+        marginBottom: hp(1.5),
     },
     bio: {
         flexDirection: 'row',
         height: hp(15),
         alignItems: 'flex-start',
-        paddingVertical: 15,
+        paddingVertical: hp(1.5),
     },
     buttonContainer: {
         position: 'absolute',
@@ -243,8 +253,11 @@ const styles = StyleSheet.create({
         left: 0,
         right: 0,
         backgroundColor: '#303030',
-        paddingHorizontal: wp(5),
-        paddingTop: hp(1),
-        paddingBottom: Platform.OS === 'ios' ? hp(4) : hp(2),
+        paddingTop: hp(1.5),
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: -3 },
+        shadowOpacity: 0.1,
+        shadowRadius: 3,
+        elevation: 8,
     }
 })
