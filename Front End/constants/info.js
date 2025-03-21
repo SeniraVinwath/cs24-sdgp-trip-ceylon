@@ -234,6 +234,53 @@ export const LANGUAGES = [
     { value: 'ZM', label: 'Zambia'},
     { value: 'ZW', label: 'Zimbabwe'}
   ];
+
+  export const LOCATIONS = [
+    { id: 1, name: 'Colombo' },
+    { id: 2, name: 'Bentota' },
+    { id: 3, name: 'Arugam Bay' },
+    { id: 4, name: 'Anuradhapura' },
+    { id: 5, name: 'Ella' },
+    { id: 6, name: 'Little Adam\'s Peak' },
+    { id: 7, name: 'Nine Arch Bridge' },
+    { id: 8, name: 'Ravana Waterfalls' },
+    { id: 9, name: 'Ravana Zipline' },
+    { id: 10, name: 'Galle Fort' },
+    { id: 11, name: 'Hikkaduwa' },
+    { id: 12, name: 'Turtle Beach' },
+    { id: 13, name: 'Horton Plains' },
+    { id: 14, name: 'World\'s End (Sri Lanka)' },
+    { id: 15, name: 'Kandy' },
+    { id: 16, name: 'Ambuluwawa Tower' },
+    { id: 17, name: 'Elephant Orphanage' },
+    { id: 18, name: 'Temple of the Tooth Relic' },
+    { id: 19, name: 'Royal Botanical Garden' },
+    { id: 20, name: 'Kitulgala' },
+    { id: 21, name: 'Mirissa' },
+    { id: 22, name: 'Negombo' },
+    { id: 23, name: 'Nuwara Eliya' },
+    { id: 24, name: 'Damro Tea Factory' },
+    { id: 25, name: 'Gregory Lake' },
+    { id: 26, name: 'Ramboda Falls' },
+    { id: 27, name: 'Tea Plantations' },
+    { id: 28, name: 'Sigiriya' },
+    { id: 29, name: 'Dambulla' },
+    { id: 30, name: 'Habarana' },
+    { id: 31, name: 'Kawudulla' },
+    { id: 32, name: 'Pidurangala' },
+    { id: 33, name: 'Minneriya' },
+    { id: 34, name: 'Tangalle' },
+    { id: 35, name: 'Hiriketiya' },
+    { id: 36, name: 'Trincomalee' },
+    { id: 37, name: 'Marble Bay' },
+    { id: 38, name: 'Maritime & Naval History Museum' },
+    { id: 39, name: 'Pasikuda' },
+    { id: 40, name: 'ThiruKoneshwaram Kovil' },
+    { id: 41, name: 'Udawalawa' },
+    { id: 42, name: 'Weligama' },
+    { id: 43, name: 'Yala' },
+    { id: 44, name: 'Adam\'s Peak' }
+  ];
   
   export const getFormattedCountryCodes = (countries, getCountryCallingCode) => {
     const formattedCountries = countries.map(country => {

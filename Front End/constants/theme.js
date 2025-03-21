@@ -8,6 +8,10 @@ export const theme = {
       forgotpasswordlink: '#3C9AFB',
       themeGreen: '#A9E34B',
       lightThemeGreen: 'rgba(169, 227, 75, 0.8)',
+      roseLight: '#FFC5CB',
+      darkLight: '#555555',
+      textDark: '#dbdddf',
+      textDark2: '#c5c6c7'
     },
   
     fonts: {

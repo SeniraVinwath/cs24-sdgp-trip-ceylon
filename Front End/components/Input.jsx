@@ -5,7 +5,7 @@ import { hp } from '../helpers/common';
 
 const Input = (props) => {
   return (
-    <View style={[styles.container, props.containerStyles]}>
+    <View style={[styles.container, props.containerStyle]}>
       {props.icon && React.cloneElement(props.icon, { color: '#475569' })}
       
       {props.picker && (
