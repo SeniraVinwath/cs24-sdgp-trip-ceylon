@@ -9,7 +9,8 @@ import Icon from '../assets/icons'
 const CommentItem = ({
     item,
     canDelete = false,
-    onDelete = ()=>{}
+    onDelete = ()=>{},
+    highlight = false
 }) => {
     const createdAt = moment(item?.created_at).format('MMM d')
 
@@ -30,7 +31,7 @@ const CommentItem = ({
   return (
     <View style={styles.container}>
       <Avatar uri={item?.traveler?.image}/>
-      <View style={styles.content}>
+      <View style={[styles.content, highlight && styles.Highlight]}>
         <View style={{flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center'}}>
             <View style={styles.nameContainer}>
                 <Text style={[styles.text]}>
@@ -79,14 +80,9 @@ const styles = StyleSheet.create({
         borderCurve: 'continuous',
     },
     Highlight: {
-        borderWidth: 0.2,
+        borderWidth: 3,
         backgroundColor: '#303030',
-        borderColor: theme.colors.textDark2,
-        shadowColor: theme.colors.textDark,
-        shadowOffset: {width: 0, height: 0},
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-        elevation: 5,
+        borderColor: 'rgba(50, 205, 50, 0.2)',
     },
     nameContainer: {
         flexDirection: 'row',
