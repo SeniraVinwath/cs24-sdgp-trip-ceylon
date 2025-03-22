@@ -80,6 +80,10 @@ export default function HomeScreen() {
           <Text style={styles.menuItemText}> Connection Requests</Text>
         </Link>
 
+        <Link href="/ConnectionsMap" style={styles.menuItem}>
+          <Text style={styles.menuItemText}> View on Map</Text>
+        </Link>
+
         <Image source={require('../assets/images/LANDING IMAGE.png')} style={styles.map} resizeMode="contain" />
       </View>
 
@@ -123,8 +127,8 @@ const styles = StyleSheet.create({
   },
   map: {
     width: '80%',
-    height: 250,
-    marginTop: 50,
+    height: 220,
+    marginTop: 10,
     marginLeft: 10,
   },
 });
