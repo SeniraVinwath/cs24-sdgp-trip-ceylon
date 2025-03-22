@@ -1,19 +1,15 @@
-import { supabase } from '../lib/supabase'; // Supabase-native import
+import { supabase } from '../lib/supabase';
 
-/** Fetch Nearby Travelers directly via Supabase RPC */
+// Fetch Nearby Travelers using RPC
 export const getNearbyTravelers = async (userLocation, userId) => {
-  if (!userLocation || !userId) {
-    console.error("Missing latitude, longitude, or user ID");
-    return [];
-  }
-
+  if (!userLocation || !userId) return [];
   const { latitude, longitude } = userLocation;
 
   const { data, error } = await supabase.rpc('find_nearby_travelers', {
     current_user_id: userId,
     user_lat: latitude,
     user_lon: longitude,
-    search_radius: 20000 // 20 km radius
+    search_radius: 20000,
   });
 
   if (error) {
@@ -24,11 +20,18 @@ export const getNearbyTravelers = async (userLocation, userId) => {
   return data;
 };
 
-/** Send a connection request using Supabase */
+// Send or re-send connection request
 export const sendConnectionRequest = async (requesterId, requestedId) => {
   const { data, error } = await supabase
     .from('connection_requests')
-    .insert([{ requester_id: requesterId, requested_id: requestedId }]);
+    .upsert(
+      [{
+        requester_id: requesterId,
+        requested_id: requestedId,
+        status: 'pending',
+      }],
+      { onConflict: ['requester_id', 'requested_id'] }
+    );
 
   if (error) {
     console.error("Insert Error:", error.message);
@@ -38,17 +41,17 @@ export const sendConnectionRequest = async (requesterId, requestedId) => {
   return { success: true, data };
 };
 
-/** Get previously sent requests using Supabase */
+// Get sent requests with statuses
 export const getSentRequests = async (userId) => {
   const { data, error } = await supabase
     .from('connection_requests')
-    .select('requested_id')
+    .select('requested_id, status')
     .eq('requester_id', userId);
 
   if (error) {
-    console.error('Error fetching sent requests:', error.message);
+    console.error("Fetch Error:", error.message);
     return [];
   }
 
-  return data.map(entry => entry.requested_id);
+  return data;
 };

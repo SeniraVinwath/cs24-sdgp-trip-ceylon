@@ -7,7 +7,7 @@ import Header from '../components/Header';
 import Footer from '../components/Footer';
 import TravelerCard from '../components/TravelerCard';
 import BackButton from '../components/BackButton';
-import { getNearbyTravelers, sendConnectionRequest, getSentRequests } from '../services/travelersAPI';
+import {getNearbyTravelers,sendConnectionRequest,getSentRequests,} from '../services/travelersAPI';
 import colors from '../constants/colors';
 import typography from '../constants/typography';
 
@@ -15,21 +15,19 @@ export default function FindTravelersScreen() {
   const [travelers, setTravelers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [userLocation, setUserLocation] = useState(null);
-  const [pendingRequests, setPendingRequests] = useState(new Set());
-  const [sentRequests, setSentRequests] = useState(new Set()); 
+  const [sentRequests, setSentRequests] = useState(new Map());
   const [showNotification, setShowNotification] = useState(false);
   const [notificationMessage, setNotificationMessage] = useState('');
   const { user } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    const fetchLocationAndTravelers = async () => {
+    const fetchData = async () => {
       try {
         setIsLoading(true);
-
         const { status } = await Location.requestForegroundPermissionsAsync();
         if (status !== 'granted') {
-          console.error('Permission to access location was denied');
+          console.error('Location permission denied');
           setIsLoading(false);
           return;
         }
@@ -39,52 +37,50 @@ export default function FindTravelersScreen() {
         setUserLocation({ latitude, longitude });
 
         if (!user || !user.id) {
-          console.error("Error: User ID is missing!");
+          console.error('Missing user ID');
           setIsLoading(false);
           return;
         }
 
-        // Fetch travelers
-        const data = await getNearbyTravelers({ latitude, longitude }, user.id);
-        if (data && data.length > 0) setTravelers(data);
+        const nearby = await getNearbyTravelers({ latitude, longitude }, user.id);
+        if (nearby && nearby.length > 0) setTravelers(nearby);
 
-        // Fetch previously sent requests
-        const existingRequests = await getSentRequests(user.id);
-        setSentRequests(new Set(existingRequests));
+        const requests = await getSentRequests(user.id);
+        const map = new Map();
+        requests.forEach(({ requested_id, status }) => {
+          map.set(requested_id, status);
+        });
+        setSentRequests(map);
       } catch (error) {
-        console.error('Error fetching travelers or requests:', error);
+        console.error('Error fetching data:', error);
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchLocationAndTravelers();
+    fetchData();
   }, []);
 
   const handleConnect = async (traveler) => {
-  if (!user || !user.id) {
-    console.error("User not logged in. Cannot send request.");
-    return;
-  }
-
-  try {
-    const result = await sendConnectionRequest(user.id, traveler.user_id);
-
-    if (result.success) {
-      console.log(`Connection request sent to ${traveler.full_name}`);
-      setPendingRequests(prev => new Set(prev).add(traveler.user_id));
-      setNotificationMessage(`Request sent to ${traveler.full_name}`);
-      setShowNotification(true);
-    } else {
-      console.error("Error sending request:", result.message);
-      Alert.alert("Request Failed", result.message);
+    if (!user || !user.id) {
+      console.error('Not logged in');
+      return;
     }
-  } catch (error) {
-    console.error("Network error:", error);
-    Alert.alert("Network Error", "Unable to send request.");
-  }
-};
 
+    try {
+      const result = await sendConnectionRequest(user.id, traveler.user_id);
+      if (result.success) {
+        setSentRequests((prev) => new Map(prev).set(traveler.user_id, 'pending'));
+        setNotificationMessage(`Request sent to ${traveler.full_name}`);
+        setShowNotification(true);
+      } else {
+        Alert.alert('Error', result.message);
+      }
+    } catch (err) {
+      console.error('Connection request error:', err);
+      Alert.alert('Network Error', 'Failed to send request.');
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -93,25 +89,31 @@ export default function FindTravelersScreen() {
         <BackButton router={router} />
       </View>
 
-      <Header title="Nearby Travelers" subtitle="Connect with travelers exploring Sri Lanka" />
+      <Header
+        title="Nearby Travelers"
+        subtitle="Connect with travelers exploring Sri Lanka"
+      />
 
       <View style={styles.content}>
         {isLoading ? (
           <Text style={styles.loadingText}>Loading travelers...</Text>
         ) : travelers.length === 0 ? (
-          <Text style={styles.noTravelersText}>There are no travelers at the moment</Text>
+          <Text style={styles.noTravelersText}>
+            There are no travelers at the moment
+          </Text>
         ) : (
           <FlatList
             data={travelers}
             keyExtractor={(item) => item.user_id || item.id}
             renderItem={({ item }) => {
               const id = item.user_id || item.id;
-              const isRequested = pendingRequests.has(id) || sentRequests.has(id);
+              const requestStatus = sentRequests.get(id);
+              console.log('Traveler:', item.full_name, '| Image:', item.image);
               return (
                 <TravelerCard
                   traveler={item}
                   onConnect={handleConnect}
-                  isRequestSent={isRequested}
+                  requestStatus={requestStatus}
                 />
               );
             }}
@@ -137,7 +139,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.secondary,
   },
   backButtonContainer: {
-    position: "absolute",
+    position: 'absolute',
     top: 42,
     left: 5,
     zIndex: 10,
@@ -145,12 +147,6 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     padding: 20,
-  },
-  sectionTitle: {
-    ...typography.heading,
-    marginBottom: 20,
-    textAlign: 'center',
-    color: colors.white,
   },
   list: {
     paddingBottom: 20,
