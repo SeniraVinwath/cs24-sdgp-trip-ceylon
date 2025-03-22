@@ -12,7 +12,7 @@ import { supabaseUrl } from '../constants/index';
 import colors from '../constants/colors';
 import typography from '../constants/typography';
 
-const TravelerCard = ({ traveler, onConnect, requestStatus }) => {
+const TravelerCard = ({ traveler, onConnect, requestStatus, isIncomingRequest, isConnected }) => {
   const [isRequesting, setIsRequesting] = useState(false);
   const [imageError, setImageError] = useState(false);
 
@@ -27,7 +27,6 @@ const TravelerCard = ({ traveler, onConnect, requestStatus }) => {
     setIsRequesting(false);
   };
 
-  // Adjusted path with correct Supabase bucket prefixes
   const imagePath = traveler.image?.startsWith('profiles/')
     ? `trip_cey_traveler_uploads/${traveler.image}`
     : `trip_cey_traveler_uploads/profiles/${traveler.image}`;
@@ -36,16 +35,18 @@ const TravelerCard = ({ traveler, onConnect, requestStatus }) => {
     ? `${supabaseUrl}/storage/v1/object/public/${imagePath}`
     : null;
 
-  const disabled = requestStatus === 'pending' || requestStatus === 'accepted';
-  const buttonText =
-    requestStatus === 'accepted'
-      ? 'Accepted'
-      : requestStatus === 'pending'
-      ? 'Requested'
-      : 'Connect';
+    const buttonText = isConnected
+    ? 'Connected'
+    : isIncomingRequest
+    ? 'Incoming'
+    : requestStatus === 'pending'
+    ? 'Requested'
+    : 'Connect';
+  
 
-  console.log('traveler.image:', traveler.image);
-  console.log('imageUrl:', imageUrl);
+    const disabled =
+    isConnected || isIncomingRequest || requestStatus === 'pending';
+  
 
   return (
     <View style={styles.card}>
@@ -75,7 +76,9 @@ const TravelerCard = ({ traveler, onConnect, requestStatus }) => {
         <TouchableOpacity
           style={[
             styles.connectButton,
-            requestStatus === 'pending'
+            isIncomingRequest
+              ? styles.incomingRequestButton
+              : requestStatus === 'pending'
               ? styles.requestedButton
               : requestStatus === 'accepted'
               ? styles.acceptedButton
@@ -145,6 +148,9 @@ const styles = StyleSheet.create({
   },
   acceptedButton: {
     backgroundColor: 'green',
+  },
+  incomingRequestButton: {
+    backgroundColor: '#555',
   },
   connectButtonText: {
     color: colors.white,

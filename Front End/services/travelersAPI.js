@@ -55,3 +55,34 @@ export const getSentRequests = async (userId) => {
 
   return data;
 };
+
+// Get requests sent to me (incoming)
+export const getIncomingRequests = async (userId) => {
+  const { data, error } = await supabase
+    .from('connection_requests')
+    .select('requester_id, status')
+    .eq('requested_id', userId);
+
+  if (error) {
+    console.error("Incoming fetch error:", error.message);
+    return [];
+  }
+
+  return data;
+};
+
+// Get accepted requests sent TO ME (other user sent request & I accepted it)
+export const getAcceptedIncomingRequests = async (userId) => {
+  const { data, error } = await supabase
+    .from('connection_requests')
+    .select('requester_id')
+    .eq('requested_id', userId)
+    .eq('status', 'accepted');
+
+  if (error) {
+    console.error('Accepted Incoming Requests Error:', error.message);
+    return [];
+  }
+
+  return data.map((item) => item.requester_id);
+};

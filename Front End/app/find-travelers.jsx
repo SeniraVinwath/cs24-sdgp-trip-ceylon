@@ -7,15 +7,21 @@ import Header from '../components/Header';
 import Footer from '../components/Footer';
 import TravelerCard from '../components/TravelerCard';
 import BackButton from '../components/BackButton';
-import {getNearbyTravelers,sendConnectionRequest,getSentRequests,} from '../services/travelersAPI';
+import {
+  getNearbyTravelers,
+  sendConnectionRequest,
+  getSentRequests,
+  getIncomingRequests,
+  getAcceptedIncomingRequests
+} from '../services/travelersAPI';
 import colors from '../constants/colors';
-import typography from '../constants/typography';
 
 export default function FindTravelersScreen() {
   const [travelers, setTravelers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [userLocation, setUserLocation] = useState(null);
   const [sentRequests, setSentRequests] = useState(new Map());
+  const [incomingRequests, setIncomingRequests] = useState(new Set());
+  const [acceptedIncoming, setAcceptedIncoming] = useState(new Set());
   const [showNotification, setShowNotification] = useState(false);
   const [notificationMessage, setNotificationMessage] = useState('');
   const { user } = useAuth();
@@ -34,16 +40,15 @@ export default function FindTravelersScreen() {
 
         const location = await Location.getCurrentPositionAsync({});
         const { latitude, longitude } = location.coords;
-        setUserLocation({ latitude, longitude });
 
-        if (!user || !user.id) {
+        if (!user?.id) {
           console.error('Missing user ID');
           setIsLoading(false);
           return;
         }
 
         const nearby = await getNearbyTravelers({ latitude, longitude }, user.id);
-        if (nearby && nearby.length > 0) setTravelers(nearby);
+        if (nearby?.length > 0) setTravelers(nearby);
 
         const requests = await getSentRequests(user.id);
         const map = new Map();
@@ -51,6 +56,16 @@ export default function FindTravelersScreen() {
           map.set(requested_id, status);
         });
         setSentRequests(map);
+
+        const incoming = await getIncomingRequests(user.id);
+        const pendingIncoming = incoming
+          .filter(req => req.status === 'pending')
+          .map(req => req.requester_id);
+        setIncomingRequests(new Set(pendingIncoming));
+
+        const acceptedFromOthers = await getAcceptedIncomingRequests(user.id);
+        setAcceptedIncoming(new Set(acceptedFromOthers));
+
       } catch (error) {
         console.error('Error fetching data:', error);
       } finally {
@@ -62,15 +77,12 @@ export default function FindTravelersScreen() {
   }, []);
 
   const handleConnect = async (traveler) => {
-    if (!user || !user.id) {
-      console.error('Not logged in');
-      return;
-    }
+    if (!user?.id) return;
 
     try {
       const result = await sendConnectionRequest(user.id, traveler.user_id);
       if (result.success) {
-        setSentRequests((prev) => new Map(prev).set(traveler.user_id, 'pending'));
+        setSentRequests(prev => new Map(prev).set(traveler.user_id, 'pending'));
         setNotificationMessage(`Request sent to ${traveler.full_name}`);
         setShowNotification(true);
       } else {
@@ -98,9 +110,7 @@ export default function FindTravelersScreen() {
         {isLoading ? (
           <Text style={styles.loadingText}>Loading travelers...</Text>
         ) : travelers.length === 0 ? (
-          <Text style={styles.noTravelersText}>
-            There are no travelers at the moment
-          </Text>
+          <Text style={styles.noTravelersText}>There are no travelers at the moment</Text>
         ) : (
           <FlatList
             data={travelers}
@@ -108,12 +118,17 @@ export default function FindTravelersScreen() {
             renderItem={({ item }) => {
               const id = item.user_id || item.id;
               const requestStatus = sentRequests.get(id);
-              console.log('Traveler:', item.full_name, '| Image:', item.image);
+              const isIncomingRequest = incomingRequests.has(id);
+              const isConnected =
+                requestStatus === 'accepted' || acceptedIncoming.has(id);
+
               return (
                 <TravelerCard
                   traveler={item}
                   onConnect={handleConnect}
                   requestStatus={requestStatus}
+                  isIncomingRequest={isIncomingRequest}
+                  isConnected={isConnected}
                 />
               );
             }}
@@ -134,27 +149,25 @@ export default function FindTravelersScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.secondary,
+  container: { 
+    flex: 1, 
+    backgroundColor: colors.secondary 
   },
-  backButtonContainer: {
-    position: 'absolute',
-    top: 42,
-    left: 5,
-    zIndex: 10,
+  backButtonContainer: { 
+    position: 'absolute', 
+    top: 42, 
+    left: 5, 
+    zIndex: 10 
   },
-  content: {
-    flex: 1,
-    padding: 20,
+  content: { 
+    flex: 1, 
+    padding: 20 
   },
-  list: {
-    paddingBottom: 20,
-  },
-  loadingText: {
-    color: colors.white,
-    textAlign: 'center',
-    marginTop: 20,
+  list: { paddingBottom: 20 },
+  loadingText: { 
+    color: colors.white, 
+    textAlign: 'center', 
+    marginTop: 20 
   },
   noTravelersText: {
     color: colors.white,
