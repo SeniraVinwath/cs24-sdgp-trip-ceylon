@@ -1,10 +1,24 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import colors from '../constants/colors.js';
-import typography from '../constants/typography.js';
+import colors from '../constants/colors';
+import typography from '../constants/typography';
 
-const TravelerCard = ({ traveler, onConnect }) => {
+const TravelerCard = ({ traveler, onConnect, isRequestSent }) => {
+  const [isRequesting, setIsRequesting] = useState(false);
+
+  const handleConnect = async () => {
+    if (!onConnect || !traveler.user_id) return;
+
+    setIsRequesting(true);
+    try {
+      await onConnect(traveler);
+    } catch (error) {
+      console.error("Error sending connection request:", error);
+    }
+    setIsRequesting(false);
+  };
+
   return (
     <View style={styles.card}>
       <View style={styles.cardContent}>
@@ -14,17 +28,33 @@ const TravelerCard = ({ traveler, onConnect }) => {
             <Ionicons name="person-circle" size={50} color={colors.white} />
           </View>
           <View style={styles.info}>
-            <Text style={styles.name}>{traveler.name}</Text>
-            <Text style={styles.country}>From {traveler.country}</Text>
+            <Text style={styles.name}>
+              {traveler.full_name ? traveler.full_name : "Unknown Traveler"}
+            </Text>
+            <Text style={styles.country}>
+              {traveler.distance_km
+                ? `${traveler.distance_km.toFixed(2)} km away`
+                : "Distance: N/A"}
+            </Text>
           </View>
         </View>
 
-        {/* Connect Button on Right Side */}
+        {/* Connect Button */}
         <TouchableOpacity
-          style={styles.connectButton}
-          onPress={() => onConnect && onConnect(traveler.id)}
+          style={[
+            styles.connectButton,
+            isRequestSent ? styles.connectedButton : {},
+          ]}
+          onPress={handleConnect}
+          disabled={isRequesting || isRequestSent}
         >
-          <Text style={styles.connectButtonText}>Connect</Text>
+          {isRequesting ? (
+            <ActivityIndicator color={colors.white} />
+          ) : (
+            <Text style={styles.connectButtonText}>
+              {isRequestSent ? "Requested" : "Connect"}
+            </Text>
+          )}
         </TouchableOpacity>
       </View>
     </View>
@@ -39,20 +69,20 @@ const styles = StyleSheet.create({
     marginBottom: 35,
   },
   cardContent: {
-    flexDirection: 'row', // Aligning elements in a row
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between', // Pushing button to the right
+    justifyContent: 'space-between',
   },
   profileContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    flex: 1, // Allowing the profile container to take available space
+    flex: 1,
   },
   profileIconContainer: {
     marginRight: 15,
   },
   info: {
-    flex: 1, // making sure text takes up available space
+    flex: 1,
   },
   name: {
     ...typography.cardTitle,
@@ -69,6 +99,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderRadius: 35,
     alignItems: 'center',
+  },
+  connectedButton: {
+    backgroundColor: colors.gray,
   },
   connectButtonText: {
     color: colors.white,
