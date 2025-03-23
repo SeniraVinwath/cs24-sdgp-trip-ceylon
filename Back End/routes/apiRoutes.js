@@ -3,16 +3,15 @@ const router = express.Router();
 const { getAccessToken } = require("../controllers/authController");
 const { trackDevice } = require("../controllers/trackController");
 const { registerLuggage } = require("../controllers/luggageController");
-const { supabase } = require("../config/supabaseClient");
+const { generateTravelPlan } = require("../controllers/travelController");
 
 router.post("/data", async (req, res) => {
-  console.log("req", req.body);
   const { account, imei, password } = req.body;
 
   if (!account || !password || !imei) {
     return res
       .status(400)
-      .json({ message: "accaount imei and password are required" });
+      .json({ message: "account, imei, and password are required" });
   }
 
   try {
@@ -21,7 +20,7 @@ router.post("/data", async (req, res) => {
     if (accessToken) {
       const trackingData = await trackDevice(accessToken, imei);
       res.json({
-        message: "device tracked successfully!",
+        message: "Device tracked successfully!",
         trackingData: trackingData,
       });
     } else {
@@ -46,9 +45,56 @@ router.post("/registerLuggage", async (req, res) => {
     const luggageData = await registerLuggage(imei, luggageDetails);
     res
       .status(200)
-      .json({ message: "luggage registered succesfully", data: luggageData });
+      .json({ message: "Luggage registered successfully", data: luggageData });
   } catch (error) {
     res.status(500).json({ error: "Error registering luggage" });
+  }
+});
+
+router.post("/travelPlanGenerator", async (req, res) => {
+  const {
+    start_date,
+    end_date,
+    preferences,
+    pace,
+    mandatory_locations,
+    excluded_locations,
+    specific_interests,
+    num_travelers,
+  } = req.body;
+
+  if (
+    !start_date ||
+    !end_date ||
+    !preferences ||
+    !pace ||
+    !mandatory_locations ||
+    !num_travelers
+  ) {
+    return res
+      .status(400)
+      .json({ error: "Missing required fields in request" });
+  }
+
+  try {
+    const travelPlan = await generateTravelPlan({
+      start_date,
+      end_date,
+      preferences,
+      pace,
+      mandatory_locations,
+      excluded_locations: excluded_locations || [],
+      specific_interests: specific_interests || [],
+      num_travelers,
+    });
+
+    res.status(200).json({
+      message: "Travel plan generated successfully",
+      data: travelPlan,
+    });
+  } catch (error) {
+    console.error("Error generating travel plan:", error);
+    res.status(500).json({ error: "Error generating travel plan" });
   }
 });
 
