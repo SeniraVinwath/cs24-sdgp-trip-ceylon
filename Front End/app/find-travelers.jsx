@@ -85,6 +85,10 @@ export default function FindTravelersScreen() {
         setSentRequests(prev => new Map(prev).set(traveler.user_id, 'pending'));
         setNotificationMessage(`Request sent to ${traveler.full_name}`);
         setShowNotification(true);
+
+        setTimeout(()=>{
+          setShowNotification(false);
+        },1000);
       } else {
         Alert.alert('Error', result.message);
       }
