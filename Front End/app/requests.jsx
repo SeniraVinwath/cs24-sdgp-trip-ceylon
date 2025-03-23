@@ -118,7 +118,10 @@ export default function Requests() {
   };
 
   const handleViewProfile = (requesterId) => {
-    router.push(`/profile/${requesterId}`);
+    router.push({
+      pathname: '/ViewProfile',
+      params: {requesterId },
+    });
   };
 
   return (
@@ -181,8 +184,6 @@ export default function Requests() {
     </View>
   );
 }
-
-// Keep the same StyleSheet as before
 
 
 const styles = StyleSheet.create({

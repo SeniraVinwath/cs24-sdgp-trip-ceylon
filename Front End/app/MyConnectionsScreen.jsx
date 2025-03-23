@@ -83,6 +83,13 @@ export default function MyConnectionsScreen({ userId }) {
     }
   };
 
+  const handleViewProfile = (requesterId) => {
+    router.push({
+      pathname: '/ViewProfile',
+      params: {requesterId},
+    });
+  };
+
   return (
     <View style={styles.container}>
       <StatusBar backgroundColor={colors.primary} barStyle="light-content" />
@@ -104,7 +111,8 @@ export default function MyConnectionsScreen({ userId }) {
               <View style={styles.connectionCard}>
                 <Text style={styles.travelerName}>{item.travelers?.user_name || 'Unknown User'}</Text>
                 <View style={styles.buttonContainer}>
-                  <TouchableOpacity style={styles.viewButton}>
+                  <TouchableOpacity style={styles.viewButton}
+                  onPress={() => handleViewProfile(item.connected_user_id)}>
                     <Text style={styles.viewButtonText}>View</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
