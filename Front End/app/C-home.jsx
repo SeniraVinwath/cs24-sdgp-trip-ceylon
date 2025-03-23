@@ -18,17 +18,18 @@ export default function HomeScreen() {
 
   useEffect(() => {
     const requestLocationPermission = async () => {
+      // Asking for location permission from user
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
         Alert.alert("Permission Denied", "We need location access to find nearby travelers.");
         return;
       }
 
+      // Fetching user's current location
       const userLocation = await Location.getCurrentPositionAsync({});
       const { latitude, longitude } = userLocation.coords;
       setLocation({ latitude, longitude });
 
-      console.log("User's Location:", latitude, longitude);
 
       const user_id = user?.id;
       if (!user_id) {

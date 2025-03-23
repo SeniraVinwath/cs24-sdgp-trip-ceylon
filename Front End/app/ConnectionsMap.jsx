@@ -10,7 +10,7 @@ import Icon from '../assets/icons';
 export default function ConnectionsMap() {
   const [connectedLocations, setConnectedLocations] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const { user } = useAuth();
+  const { user } = useAuth(); 
   const router = useRouter();
 
   useEffect(() => {
@@ -18,6 +18,7 @@ export default function ConnectionsMap() {
       if (!user?.id) return;
 
       try {
+        // Calling Supabase function to fetch locations of connected users
         const { data: locations, error } = await supabase
           .rpc('get_connected_locations', { current_user_id: user.id });
 
@@ -25,7 +26,7 @@ export default function ConnectionsMap() {
           console.error('Error fetching connected traveler locations:', error.message);
           return;
         }
-
+        // Saving the list of connected users locations
         setConnectedLocations(locations);
       } catch (err) {
         console.error('Unexpected error in map screen:', err);
@@ -44,6 +45,7 @@ export default function ConnectionsMap() {
     longitudeDelta: 4,
   };
 
+  // Show a loading spinner until data is fetched
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
@@ -52,6 +54,7 @@ export default function ConnectionsMap() {
     );
   }
 
+  //Filtering out duplicates(to prevent redundancy)
   const uniqueTravelers = [...new Map(
     connectedLocations.map(t => [t.user_id, t])
   ).values()];
@@ -65,12 +68,15 @@ export default function ConnectionsMap() {
         </Pressable>
       </View>
 
+      {/* showing all connected users with their location pins on Map */}
       <MapView style={styles.map} initialRegion={defaultRegion}>
         {uniqueTravelers.map((traveler) => {
           const shortName = traveler.full_name.split(' ')[0];
 
           return (
             <React.Fragment key={`${traveler.user_id}-${traveler.latitude}`}>
+              
+              {/* Label which shows users name slightly above the redpin */}
               <Marker
                 coordinate={{
                   latitude: traveler.latitude + 0.0004,
@@ -83,6 +89,7 @@ export default function ConnectionsMap() {
                 </View>
               </Marker>
 
+              {/*Red pin on map*/}
               <Marker
                 coordinate={{
                   latitude: traveler.latitude,
