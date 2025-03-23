@@ -1,14 +1,17 @@
 import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, ActivityIndicator, Text } from 'react-native';
+import { View, StyleSheet, ActivityIndicator, Text, Pressable } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import colors from '../constants/colors';
+import { useRouter } from 'expo-router';
+import Icon from '../assets/icons';
 
 export default function ConnectionsMap() {
   const [connectedLocations, setConnectedLocations] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const { user } = useAuth();
+  const router = useRouter();
 
   useEffect(() => {
     const fetchConnectedTravelerLocations = async () => {
@@ -54,42 +57,50 @@ export default function ConnectionsMap() {
   ).values()];
 
   return (
-    <MapView style={styles.map} initialRegion={defaultRegion}>
-  {uniqueTravelers.map((traveler) => {
-    const shortName = traveler.full_name.split(' ')[0]; // getting the first name of the user
+    <View style={styles.container}>
+      {/* Added a custom backbutton in map to navigate to menu */}
+      <View style={styles.backButtonWrapper}>
+        <Pressable onPress={() => router.back()} style={styles.backButton}>
+          <Icon name="arrowLeft" size={28} strokeWidth={2.5} color="black" />
+        </Pressable>
+      </View>
 
-    return (
-      <React.Fragment key={`${traveler.user_id}-${traveler.latitude}`}>
-        {/* Label that showing above the pin */}
-        <Marker
-          coordinate={{
-            latitude: traveler.latitude + 0.0004, // had to add a offset to upwards
-            longitude: traveler.longitude,
-          }}
-          anchor={{ x: 0.5, y: 1 }}
-          
-        >
-          <View style={styles.labelAbovePin}>
-            <Text style={styles.labelText}>{shortName}</Text>
-          </View>
-        </Marker>
+      <MapView style={styles.map} initialRegion={defaultRegion}>
+        {uniqueTravelers.map((traveler) => {
+          const shortName = traveler.full_name.split(' ')[0];
 
-        {/* real red color pin */}
-        <Marker
-          coordinate={{
-            latitude: traveler.latitude,
-            longitude: traveler.longitude,
-          }}
-        />
-      </React.Fragment>
-    );
-  })}
-</MapView>
+          return (
+            <React.Fragment key={`${traveler.user_id}-${traveler.latitude}`}>
+              <Marker
+                coordinate={{
+                  latitude: traveler.latitude + 0.0004,
+                  longitude: traveler.longitude,
+                }}
+                anchor={{ x: 0.5, y: 1 }}
+              >
+                <View style={styles.labelAbovePin}>
+                  <Text style={styles.labelText}>{shortName}</Text>
+                </View>
+              </Marker>
 
+              <Marker
+                coordinate={{
+                  latitude: traveler.latitude,
+                  longitude: traveler.longitude,
+                }}
+              />
+            </React.Fragment>
+          );
+        })}
+      </MapView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
   map: {
     flex: 1,
   },
@@ -98,6 +109,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.secondary,
+  },
+  backButtonWrapper: {
+    position: 'absolute',
+    top: 50,
+    left: 20,
+    zIndex: 10,
+  },
+  backButton: {
+    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+    padding: 5,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.black,
   },
   labelAbovePin: {
     alignItems: 'center',
@@ -116,7 +140,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 1, height: 1 },
     shadowOpacity: 0.3,
     shadowRadius: 3,
-    textAlign: 'left'
+    textAlign: 'left',
   },
-  
 });
