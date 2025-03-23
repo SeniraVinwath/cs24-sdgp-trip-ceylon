@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View, Image, Pressable, Animated, Platform } from 'react-native';
+import { StyleSheet, Text, View, Image, Pressable, Animated, Platform, BackHandler } from 'react-native';
 import React, { useRef, useEffect } from 'react';
 import ScreenWrapper from '../components/ScreenWrapper';
 import { StatusBar } from 'expo-status-bar';
@@ -22,6 +22,20 @@ const Welcome = () => {
       android: Math.max(insets.bottom, hp(2)), 
     }), 
   };
+  
+  useEffect(() => {
+    const backAction = () => {
+      BackHandler.exitApp();
+      return true;
+    };
+
+    const backHandler = BackHandler.addEventListener(
+      'hardwareBackPress',
+      backAction
+    );
+
+    return () => backHandler.remove();
+  }, []);
   
   useEffect(() => {
     Animated.parallel([

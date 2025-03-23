@@ -19,9 +19,13 @@ import colors from '../constants/colors';
 export default function FindTravelersScreen() {
   const [travelers, setTravelers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Tracking status of sent and received requests
   const [sentRequests, setSentRequests] = useState(new Map());
   const [incomingRequests, setIncomingRequests] = useState(new Set());
   const [acceptedIncoming, setAcceptedIncoming] = useState(new Set());
+
+  // Pop-up message state
   const [showNotification, setShowNotification] = useState(false);
   const [notificationMessage, setNotificationMessage] = useState('');
   const { user } = useAuth();
@@ -31,13 +35,14 @@ export default function FindTravelersScreen() {
     const fetchData = async () => {
       try {
         setIsLoading(true);
+        // Requesting for location permissions
         const { status } = await Location.requestForegroundPermissionsAsync();
         if (status !== 'granted') {
           console.error('Location permission denied');
           setIsLoading(false);
           return;
         }
-
+        // Getting current location
         const location = await Location.getCurrentPositionAsync({});
         const { latitude, longitude } = location.coords;
 
@@ -46,23 +51,26 @@ export default function FindTravelersScreen() {
           setIsLoading(false);
           return;
         }
-
+        // Geting list of nearby travelers and excluding the current user
         const nearby = await getNearbyTravelers({ latitude, longitude }, user.id);
         if (nearby?.length > 0) setTravelers(nearby);
 
+        // Get connection requests **sent** by me
         const requests = await getSentRequests(user.id);
         const map = new Map();
         requests.forEach(({ requested_id, status }) => {
           map.set(requested_id, status);
         });
         setSentRequests(map);
-
+        
+        // Get **incoming** connection requests (pending)
         const incoming = await getIncomingRequests(user.id);
         const pendingIncoming = incoming
           .filter(req => req.status === 'pending')
           .map(req => req.requester_id);
         setIncomingRequests(new Set(pendingIncoming));
 
+        // Get requests that were sent to me and I have accepted
         const acceptedFromOthers = await getAcceptedIncomingRequests(user.id);
         setAcceptedIncoming(new Set(acceptedFromOthers));
 
@@ -76,15 +84,23 @@ export default function FindTravelersScreen() {
     fetchData();
   }, []);
 
+  // Handling new connection requests
   const handleConnect = async (traveler) => {
     if (!user?.id) return;
 
     try {
       const result = await sendConnectionRequest(user.id, traveler.user_id);
       if (result.success) {
+        // Saving the new pending request
         setSentRequests(prev => new Map(prev).set(traveler.user_id, 'pending'));
+
+        //Showing a success message to user saying that request has sent successfully
         setNotificationMessage(`Request sent to ${traveler.full_name}`);
         setShowNotification(true);
+
+        setTimeout(()=>{
+          setShowNotification(false);
+        },1000);
       } else {
         Alert.alert('Error', result.message);
       }
@@ -106,6 +122,7 @@ export default function FindTravelersScreen() {
         subtitle="Connect with travelers exploring Sri Lanka"
       />
 
+       {/* showing the list of nearby travelers */}
       <View style={styles.content}>
         {isLoading ? (
           <Text style={styles.loadingText}>Loading travelers...</Text>
@@ -137,6 +154,7 @@ export default function FindTravelersScreen() {
         )}
       </View>
 
+      {/* Temporary pop-up message after sending request */}
       {showNotification && (
         <View style={styles.notification}>
           <Text style={styles.notificationText}>{notificationMessage}</Text>

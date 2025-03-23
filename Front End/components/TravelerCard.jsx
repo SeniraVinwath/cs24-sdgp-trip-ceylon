@@ -12,10 +12,12 @@ import { supabaseUrl } from '../constants/index';
 import colors from '../constants/colors';
 import typography from '../constants/typography';
 
+// Reusable card to show each travelers information and connection button
 const TravelerCard = ({ traveler, onConnect, requestStatus, isIncomingRequest, isConnected }) => {
-  const [isRequesting, setIsRequesting] = useState(false);
-  const [imageError, setImageError] = useState(false);
+  const [isRequesting, setIsRequesting] = useState(false);  // Loading state when sending request
+  const [imageError, setImageError] = useState(false);  // Fallback if profile image fails to load
 
+  // Handle Connect button press
   const handleConnect = async () => {
     if (!onConnect || !traveler.user_id) return;
     setIsRequesting(true);
@@ -27,6 +29,7 @@ const TravelerCard = ({ traveler, onConnect, requestStatus, isIncomingRequest, i
     setIsRequesting(false);
   };
 
+  // Resolving travelers image path from Supabase
   const imagePath = traveler.image?.startsWith('profiles/')
     ? `trip_cey_traveler_uploads/${traveler.image}`
     : `trip_cey_traveler_uploads/profiles/${traveler.image}`;
@@ -35,6 +38,7 @@ const TravelerCard = ({ traveler, onConnect, requestStatus, isIncomingRequest, i
     ? `${supabaseUrl}/storage/v1/object/public/${imagePath}`
     : null;
 
+     // Determining the label of the button based on connection status
     const buttonText = isConnected
     ? 'Connected'
     : isIncomingRequest
@@ -44,6 +48,7 @@ const TravelerCard = ({ traveler, onConnect, requestStatus, isIncomingRequest, i
     : 'Connect';
   
 
+    // Disabling button if already connected or request is in progress
     const disabled =
     isConnected || isIncomingRequest || requestStatus === 'pending';
   
