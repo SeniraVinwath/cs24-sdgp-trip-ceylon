@@ -19,10 +19,16 @@ export default function MyConnectionsScreen({ userId }) {
       try {
         setIsLoading(true);
         
-        // Fetch all connections (without user-specific filtering)
+        // Get the logged-in user
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+  
+        if (userError || !user) throw new Error("User not found");
+  
+        // Fetch connections where the user is involved
         const { data, error } = await supabase
           .from('connections')
-          .select('*'); 
+          .select('*')
+          .or(`connected_user_id.eq.${user.id},user_id.eq.${user.id}`);  // Fix filtering
   
         if (error) throw error;
   
@@ -30,20 +36,23 @@ export default function MyConnectionsScreen({ userId }) {
           console.log("No connections found.");
           setConnections([]);
         } else {
-          // Fetch connected user details
+          // Fetch traveler details for each connection
           const connectionsWithUsers = await Promise.all(
             data.map(async (connection) => {
-              const { data: user, error: userError } = await supabase
-                .from('users')
-                .select('id, name')
-                .eq('id', connection.connected_user_id)
+              const otherUserId = connection.connected_user_id === user.id ? connection.user_id : connection.connected_user_id;
+  
+              const { data: traveler, error: travelerError } = await supabase
+                .from('travelers')
+                .select('id, user_name')
+                .eq('id', otherUserId)
                 .single();
   
-              if (userError) {
-                console.error("User fetch error:", userError);
-                return { ...connection, user: null };
+              if (travelerError || !traveler) {
+                console.error("User fetch error:", travelerError);
+                return { ...connection, travelers: { user_name: "Unknown User" } };
               }
-              return { ...connection, user };
+  
+              return { ...connection, travelers: traveler };
             })
           );
   
@@ -93,7 +102,7 @@ export default function MyConnectionsScreen({ userId }) {
             keyExtractor={(item) => item.id}
             renderItem={({ item }) => (
               <View style={styles.connectionCard}>
-                <Text style={styles.travelerName}>{item.user?.name || 'Unknown User'}</Text>
+                <Text style={styles.travelerName}>{item.travelers?.user_name || 'Unknown User'}</Text>
                 <View style={styles.buttonContainer}>
                   <TouchableOpacity style={styles.viewButton}>
                     <Text style={styles.viewButtonText}>View</Text>
