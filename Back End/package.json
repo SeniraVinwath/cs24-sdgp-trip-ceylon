@@ -1,24 +1,24 @@
 {
-    "name": "citytrack-backend",
-    "version": "1.0.0",
-    "description": "citytrack api call",
-    "main": "server.js",
-    "scripts": {
-      "test": "echo \"Error: no test specified\" && exit 1"
-    },
-    "author": "",
-    "license": "ISC",
-    "keywords": [],
-    "dependencies": {
-      "@supabase/supabase-js": "^2.49.1",
-      "axios": "^1.8.4",
-      "body-parser": "^1.20.3",
-      "dotenv": "^16.4.7",
-      "express": "^4.21.2",
-      "jimp": "^1.6.0",
-      "jsonwebtoken": "^9.0.2",
-      "md5": "^2.3.0",
-      "qrcode-reader": "^1.0.4"
-    }
+  "name": "citytrack-backend",
+  "version": "1.0.0",
+  "description": "citytrack api call",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "keywords": [],
+  "dependencies": {
+    "@google/generative-ai": "^0.24.0",
+    "@supabase/supabase-js": "^2.49.1",
+    "axios": "^1.8.4",
+    "body-parser": "^1.20.3",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "jimp": "^1.6.0",
+    "jsonwebtoken": "^9.0.2",
+    "md5": "^2.3.0",
+    "qrcode-reader": "^1.0.4"
   }
-  
+}
