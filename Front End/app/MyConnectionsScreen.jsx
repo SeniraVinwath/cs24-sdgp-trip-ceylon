@@ -68,6 +68,7 @@ export default function MyConnectionsScreen({ userId }) {
     fetchConnections();
   }, []);
 
+  // Remove a connection
   const handleRemoveConnection = async (connectionId) => {
     try {
       const { error } = await supabase
@@ -83,6 +84,7 @@ export default function MyConnectionsScreen({ userId }) {
     }
   };
 
+  // View a traveler's profile
   const handleViewProfile = (requesterId) => {
     router.push({
       pathname: '/ViewProfile',

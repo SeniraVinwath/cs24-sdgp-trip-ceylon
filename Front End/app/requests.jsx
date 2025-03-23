@@ -49,10 +49,10 @@ export default function Requests() {
           return req;
         });
 
-        //console.log("Final Profile Image URL:", item.travelers?.image);
        
-        console.log("Raw Supabase Data:", data);
-        console.log("Processed Requests:", processedRequests); 
+       
+        // console.log("Raw Supabase Data:", data);
+        // console.log("Processed Requests:", processedRequests); 
         setRequests(processedRequests);
   
       } catch (error) {
@@ -102,6 +102,7 @@ export default function Requests() {
     }
   };
 
+  // Decline a request
   const handleDecline = async (requestId) => {
     try {
       const { error } = await supabase
@@ -117,6 +118,7 @@ export default function Requests() {
     }
   };
 
+  // View a traveler's profile
   const handleViewProfile = (requesterId) => {
     router.push({
       pathname: '/ViewProfile',
@@ -267,7 +269,7 @@ const styles = StyleSheet.create({
   profileImage: {
     width: 60,
     height: 60,
-    borderRadius: 30, // Circular image
+    borderRadius: 30, 
     borderWidth: 2,
     borderColor: 'white',
     marginBottom: 5,

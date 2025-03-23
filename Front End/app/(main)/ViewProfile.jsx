@@ -18,7 +18,7 @@ var limit = 0;
 
 const ViewProfile = () => {
   const router = useRouter();
-  const { requesterId } = useLocalSearchParams(); // ✅ Get requesterId from query params
+  const { requesterId } = useLocalSearchParams(); 
 
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -34,7 +34,7 @@ const ViewProfile = () => {
     }),
   };
 
-  // ✅ Fetch user profile based on requesterId
+  //Fetch user profile based on requesterId
   useEffect(() => {
     const fetchUserProfile = async () => {
       try {
@@ -43,12 +43,12 @@ const ViewProfile = () => {
           return;
         }
   
-        console.log("Fetching profile for requesterId:", requesterId); // Debugging log
+        console.log("Fetching profile for requesterId:", requesterId); 
   
         setIsLoading(true);
   
         const { data, error } = await supabase
-          .from('travelers') // ✅ Ensure this matches your database table name
+          .from('travelers') //Ensure this matches your database table name
           .select('*')
           .eq('id', requesterId)
           .single();
