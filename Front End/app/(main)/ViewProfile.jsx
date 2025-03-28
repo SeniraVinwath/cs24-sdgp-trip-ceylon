@@ -1,7 +1,7 @@
 import { Alert, FlatList, StyleSheet, Text, View, Platform, ActivityIndicator } from 'react-native';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import ScreenWrapper from '../../components/ScreenWrapper';
-import { useRouter, useLocalSearchParams } from 'expo-router'; // Extract query parameters
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import Head from '../../components/Head';
 import { hp, wp } from '../../helpers/common';
 import Icon from '../../assets/icons';
@@ -13,12 +13,13 @@ import { fetchUserPosts } from '../../services/postService';
 import PostCard from '../../components/PostCard';
 import Loading from '../../components/Loading';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 
 var limit = 0;
 
 const ViewProfile = () => {
   const router = useRouter();
-  const { requesterId } = useLocalSearchParams(); 
+  const { requesterId, transition } = useLocalSearchParams();
 
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -34,50 +35,62 @@ const ViewProfile = () => {
     }),
   };
 
-  //Fetch user profile based on requesterId
+  // Set loading state immediately when component mounts
+  // This ensures we show a loading state right away
   useEffect(() => {
-    const fetchUserProfile = async () => {
-      try {
-        if (!requesterId) {
-          console.error("No requesterId found in query params");
-          return;
-        }
-  
-        console.log("Fetching profile for requesterId:", requesterId); 
-  
-        setIsLoading(true);
-  
-        const { data, error } = await supabase
-          .from('travelers') //Ensure this matches your database table name
-          .select('*')
-          .eq('id', requesterId)
-          .single();
-  
-        if (error) {
-          console.error("Supabase error:", error);
-          throw error;
-        }
-  
-        if (!data) {
-          console.warn("No user found for requesterId:", requesterId);
-          return;
-        }
-  
-        setUser(data);
-      } catch (error) {
-        Alert.alert('Error', 'Failed to load user profile');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-  
-    fetchUserProfile();
-  }, [requesterId]);
+    setIsLoading(true);
+  }, []);
 
-  useEffect(() => {
-    limit = 0;
-    getPosts();
-  }, [requesterId]);
+  // Using useFocusEffect to ensure we reload when the screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      const fetchUserProfile = async () => {
+        try {
+          if (!requesterId) {
+            console.error("No requesterId found in query params");
+            return;
+          }
+
+          console.log("Fetching profile for requesterId:", requesterId);
+
+          // Keep isLoading true while fetching
+
+          const { data, error } = await supabase
+            .from('travelers')
+            .select('*')
+            .eq('id', requesterId)
+            .single();
+
+          if (error) {
+            console.error("Supabase error:", error);
+            throw error;
+          }
+
+          if (!data) {
+            console.warn("No user found for requesterId:", requesterId);
+            return;
+          }
+
+          setUser(data);
+        } catch (error) {
+          Alert.alert('Error', 'Failed to load user profile');
+        } finally {
+          // Small delay to ensure smoother transition
+          setTimeout(() => {
+            setIsLoading(false);
+          }, 100);
+        }
+      };
+
+      fetchUserProfile();
+      limit = 0;
+      getPosts();
+
+      return () => {
+        // Clean up if needed when screen loses focus
+      };
+    }, [requesterId])
+  );
 
   const getPosts = async () => {
     if (!hasMore || !requesterId) return;
@@ -110,20 +123,26 @@ const ViewProfile = () => {
     }
   };
 
+  // Enhanced loading screen with the same background color
   if (isLoading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={theme.colors.themeGreen} />
-        <Text style={styles.loadingText}>Loading profile...</Text>
-      </View>
+      <ScreenWrapper bg="#303030">
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={theme.colors.themeGreen} />
+          <Text style={styles.loadingText}>Loading profile...</Text>
+        </View>
+      </ScreenWrapper>
     );
   }
 
+  // Error screen with the same background color
   if (!user) {
     return (
-      <View style={styles.errorContainer}>
-        <Text style={styles.errorText}>User profile not found</Text>
-      </View>
+      <ScreenWrapper bg="#303030">
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>User profile not found</Text>
+        </View>
+      </ScreenWrapper>
     );
   }
 
@@ -311,21 +330,26 @@ const styles = StyleSheet.create({
     borderRadius: theme.radius.sm,
     marginTop: hp(0.2),
   },
-  logoutButton: {
-    position: 'absolute',
-    right: wp(1),
-    top: wp(1),
-    padding: wp(2),
-    borderRadius: theme.radius.sm,
-    backgroundColor: 'rgba(66, 66, 66, 0.8)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 5,
-    zIndex: 10,
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#303030',
+  },
+  loadingText: {
+    color: '#E0E0E0',
+    fontSize: hp(2),
+    marginTop: hp(2),
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#303030',
+  },
+  errorText: {
+    color: '#E0E0E0',
+    fontSize: hp(2),
   },
   listStyle: {
     backgroundColor: '#303030',
