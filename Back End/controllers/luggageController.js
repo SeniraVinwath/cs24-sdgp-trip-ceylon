@@ -1,27 +1,53 @@
-const {supabase} = require('../config/supabaseClient');
+const { supabase } = require("../config/supabaseClient");
 
-async function registerLuggage(imei,luggageDetails) {
-    const{user_id,luggage_type,luggage_name,size,weight,additional_info} = luggageDetails;
-
-    const{data,error} = await supabase
-    .from('luggage')
+async function registerLuggage(userId, luggageName, account, imei, password) {
+  const { data, error } = await supabase
+    .from("luggages")
     .insert([
-        {
-            imei: imei,
-            user_id: user_id,
-            luggage_type: luggage_type,
-            luggage_name: luggage_name,
-            size: size,
-            weight: weight,
-            additional_info: additional_info,
-        },
-    ]);
+      {
+        user_id: userId,
+        imei: imei,
+        luggage_name: luggageName,
+        account: account,
+        password: password,
+      },
+    ])
+    .select();
 
-    if (error){
-        console.error('error registering luggage:',error);
-        throw new error('error registering luggage');
-    }
+  if (error) {
+    console.error("Error registering luggage:", error);
+    throw new Error("Failed to register luggage: " + error.message);
+  }
 
-    return data;
+  return data[0];
 }
-module.exports = {registerLuggage};
+
+async function getRegisteredLuggage(userId) {
+  const { data, error } = await supabase
+    .from("luggages")
+    .select("*")
+    .eq("user_id", userId);
+
+  if (error) {
+    console.error("Error fetching luggage:", error);
+    throw new Error("Failed to fetch luggage");
+  }
+
+  return data;
+}
+
+async function deleteLuggage(luggageId) {
+  const { error } = await supabase
+    .from("luggages")
+    .delete()
+    .eq("luggage_id", luggageId);
+
+  if (error) {
+    console.error("Error deleting luggage:", error);
+    throw new Error("Failed to delete luggage: " + error.message);
+  }
+
+  return true;
+}
+
+module.exports = { registerLuggage, getRegisteredLuggage, deleteLuggage };
