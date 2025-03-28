@@ -1,17 +1,22 @@
 import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, ActivityIndicator, Text, Pressable } from 'react-native';
+import { View, StyleSheet, ActivityIndicator, Text, Platform, Image } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import colors from '../constants/colors';
 import { useRouter } from 'expo-router';
-import Icon from '../assets/icons';
+import Head from '../components/Head';
+import ScreenWrapper from '../components/ScreenWrapper';
+import { hp, wp } from '../helpers/common';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { getUserImageSrc } from '../services/imageService';
 
 export default function ConnectionsMap() {
   const [connectedLocations, setConnectedLocations] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const { user } = useAuth(); 
   const router = useRouter();
+  const insets = useSafeAreaInsets();
 
   useEffect(() => {
     const fetchConnectedTravelerLocations = async () => {
@@ -26,8 +31,38 @@ export default function ConnectionsMap() {
           console.error('Error fetching connected traveler locations:', error.message);
           return;
         }
+        
+        // Additional query to get traveler profiles with their images
+        const { data: travelers, error: travelersError } = await supabase
+          .from('travelers')
+          .select('id, image')
+          .in('id', locations.map(loc => loc.user_id));
+          
+        if (travelersError) {
+          console.error('Error fetching travelers:', travelersError.message);
+        }
+        
+        const travelerImageMap = {};
+        if (travelers) {
+          travelers.forEach(traveler => {
+            travelerImageMap[traveler.id] = traveler.image;
+          });
+        }
+        
+        // Process the locations to ensure image field is correct
+        const processedLocations = locations.map(location => {
+          // Look up the image from our travelers query
+          const travelerImage = travelerImageMap[location.user_id];
+          
+          return {
+            ...location,
+            // Use the traveler image we found
+            image: travelerImage
+          };
+        });
+        
         // Saving the list of connected users locations
-        setConnectedLocations(locations);
+        setConnectedLocations(processedLocations);
       } catch (err) {
         console.error('Unexpected error in map screen:', err);
       } finally {
@@ -48,9 +83,11 @@ export default function ConnectionsMap() {
   // Show a loading spinner until data is fetched
   if (isLoading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={colors.primary} />
-      </View>
+      <ScreenWrapper bg={colors.secondary} statusBarStyle="light-content">
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
+        </View>
+      </ScreenWrapper>
     );
   }
 
@@ -59,57 +96,76 @@ export default function ConnectionsMap() {
     connectedLocations.map(t => [t.user_id, t])
   ).values()];
 
+  const platformSpacing = { 
+    paddingBottom: Platform.select({ 
+      ios: Math.max(insets.bottom, hp(2)), 
+      android: Math.max(insets.bottom, hp(2)) 
+    }) 
+  };
+
   return (
-    <View style={styles.container}>
-      {/* Added a custom backbutton in map to navigate to menu */}
-      <View style={styles.backButtonWrapper}>
-        <Pressable onPress={() => router.back()} style={styles.backButton}>
-          <Icon name="arrowLeft" size={28} strokeWidth={2.5} color="black" />
-        </Pressable>
-      </View>
-
-      {/* showing all connected users with their location pins on Map */}
-      <MapView style={styles.map} initialRegion={defaultRegion}>
-        {uniqueTravelers.map((traveler) => {
-          const shortName = traveler.full_name.split(' ')[0];
-
-          return (
-            <React.Fragment key={`${traveler.user_id}-${traveler.latitude}`}>
+    <ScreenWrapper bg="#303030" statusBarStyle="light-content">
+      <View style={[styles.container, platformSpacing]}>
+        {/* Added a custom backbutton in map to navigate to menu */}
+        <Head title="Map View" />
+        
+        {/* showing all connected users with their profile images on Map */}
+        <View style={styles.mapContainer}>
+          <MapView 
+            style={styles.map} 
+            initialRegion={defaultRegion}
+            showsUserLocation
+            showsMyLocationButton
+          >
+            {uniqueTravelers.map((traveler) => {
+              // Get proper image source using getUserImageSrc
+              const imageSource = getUserImageSrc(traveler.image);
               
-              {/* Label which shows users name slightly above the redpin */}
-              <Marker
-                coordinate={{
-                  latitude: traveler.latitude + 0.0004,
-                  longitude: traveler.longitude,
-                }}
-                anchor={{ x: 0.5, y: 1 }}
-              >
-                <View style={styles.labelAbovePin}>
-                  <Text style={styles.labelText}>{shortName}</Text>
-                </View>
-              </Marker>
-
-              {/*Red pin on map*/}
-              <Marker
-                coordinate={{
-                  latitude: traveler.latitude,
-                  longitude: traveler.longitude,
-                }}
-              />
-            </React.Fragment>
-          );
-        })}
-      </MapView>
-    </View>
+              return (
+                <Marker
+                  key={`${traveler.user_id}-${traveler.latitude}-${traveler.longitude}`}
+                  coordinate={{
+                    latitude: traveler.latitude,
+                    longitude: traveler.longitude,
+                  }}
+                  anchor={{ x: 0.5, y: 0.5 }}
+                >
+                  <View style={styles.markerContainer}>
+                    <Image 
+                      source={imageSource}
+                      style={styles.profileImage}
+                      defaultSource={require('../assets/images/defaultUserIMG.jpg')}
+                      onError={(e) => {
+                        console.error('Failed to load image for user:', traveler.user_id);
+                      }}
+                    />
+                  </View>
+                </Marker>
+              );
+            })}
+          </MapView>
+        </View>
+      </View>
+    </ScreenWrapper>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    paddingHorizontal: wp(2),
+    backgroundColor: '#303030',
+  },
+  mapContainer: {
+    flex: 1,
+    borderRadius: hp(1),
+    overflow: 'hidden',
+    marginVertical: hp(1),
   },
   map: {
     flex: 1,
+    width: '100%',
+    height: '100%',
   },
   loadingContainer: {
     flex: 1,
@@ -117,36 +173,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: colors.secondary,
   },
-  backButtonWrapper: {
-    position: 'absolute',
-    top: 50,
-    left: 20,
-    zIndex: 10,
-  },
-  backButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.7)',
-    padding: 5,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: colors.black,
-  },
-  labelAbovePin: {
+  markerContainer: {
     alignItems: 'center',
     justifyContent: 'center',
   },
-  labelText: {
-    backgroundColor: 'white',
-    paddingHorizontal: 0,
-    paddingVertical: 2,
-    borderRadius: 5,
-    fontWeight: 'bold',
-    fontSize: 6,
-    color: colors.black,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 1, height: 1 },
-    shadowOpacity: 0.3,
-    shadowRadius: 3,
-    textAlign: 'left',
+  profileImage: {
+    width: hp(4),
+    height: hp(4),
+    borderRadius: hp(2),
+    borderWidth: 2,
+    borderColor: 'white',
+    backgroundColor: colors.primary,
   },
 });
