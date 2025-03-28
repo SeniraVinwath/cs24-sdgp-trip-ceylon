@@ -1,0 +1,1 @@
+export default BASE_API_IRL = "http://10.158.21.14:3000";
