@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { View, FlatList, Text, StyleSheet, StatusBar, Alert } from 'react-native';
+import { View, FlatList, Text, StyleSheet, Alert, Platform } from 'react-native';
 import * as Location from 'expo-location';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../contexts/AuthContext';
-import Header from '../components/Header';
 import Footer from '../components/Footer';
 import TravelerCard from '../components/TravelerCard';
-import BackButton from '../components/BackButton';
+import Head from '../components/Head';
 import {
   getNearbyTravelers,
   sendConnectionRequest,
@@ -15,6 +15,8 @@ import {
   getAcceptedIncomingRequests
 } from '../services/travelersAPI';
 import colors from '../constants/colors';
+import { hp, wp } from '../helpers/common';
+import ScreenWrapper from '../components/ScreenWrapper';
 
 export default function FindTravelersScreen() {
   const [travelers, setTravelers] = useState([]);
@@ -30,6 +32,15 @@ export default function FindTravelersScreen() {
   const [notificationMessage, setNotificationMessage] = useState('');
   const { user } = useAuth();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
+
+  // Platform-specific spacing to ensure consistent appearance
+  const platformSpacing = { 
+    paddingBottom: Platform.select({ 
+      ios: Math.max(insets.bottom, hp(2)),
+      android: Math.max(insets.bottom, hp(2)),
+    }),
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -51,7 +62,7 @@ export default function FindTravelersScreen() {
           setIsLoading(false);
           return;
         }
-        // Geting list of nearby travelers and excluding the current user
+        // Getting list of nearby travelers and excluding the current user
         const nearby = await getNearbyTravelers({ latitude, longitude }, user.id);
         if (nearby?.length > 0) setTravelers(nearby);
 
@@ -100,7 +111,7 @@ export default function FindTravelersScreen() {
 
         setTimeout(()=>{
           setShowNotification(false);
-        },1000);
+        }, 1000);
       } else {
         Alert.alert('Error', result.message);
       }
@@ -111,103 +122,107 @@ export default function FindTravelersScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <StatusBar backgroundColor={colors.primary} barStyle="light-content" />
-      <View style={styles.backButtonContainer}>
-        <BackButton router={router} />
-      </View>
+    <ScreenWrapper bg={colors.secondary}>
+      <View style={styles.container}>
+        <Head title="Nearby Travelers" />
+        
+        {/* showing the list of nearby travelers */}
+        <View style={styles.content}>
+          {isLoading ? (
+            <Text style={styles.loadingText}>Loading travelers...</Text>
+          ) : travelers.length === 0 ? (
+            <Text style={styles.noTravelersText}>There are no travelers at the moment</Text>
+          ) : (
+            <FlatList
+              data={travelers}
+              keyExtractor={(item) => item.user_id || item.id}
+              renderItem={({ item }) => {
+                const id = item.user_id || item.id;
+                const requestStatus = sentRequests.get(id);
+                const isIncomingRequest = incomingRequests.has(id);
+                const isConnected =
+                  requestStatus === 'accepted' || acceptedIncoming.has(id);
 
-      <Header
-        title="Nearby Travelers"
-        subtitle="Connect with travelers exploring Sri Lanka"
-      />
-
-       {/* showing the list of nearby travelers */}
-      <View style={styles.content}>
-        {isLoading ? (
-          <Text style={styles.loadingText}>Loading travelers...</Text>
-        ) : travelers.length === 0 ? (
-          <Text style={styles.noTravelersText}>There are no travelers at the moment</Text>
-        ) : (
-          <FlatList
-            data={travelers}
-            keyExtractor={(item) => item.user_id || item.id}
-            renderItem={({ item }) => {
-              const id = item.user_id || item.id;
-              const requestStatus = sentRequests.get(id);
-              const isIncomingRequest = incomingRequests.has(id);
-              const isConnected =
-                requestStatus === 'accepted' || acceptedIncoming.has(id);
-
-              return (
-                <TravelerCard
-                  traveler={item}
-                  onConnect={handleConnect}
-                  requestStatus={requestStatus}
-                  isIncomingRequest={isIncomingRequest}
-                  isConnected={isConnected}
-                />
-              );
-            }}
-            contentContainerStyle={styles.list}
-          />
-        )}
-      </View>
-
-      {/* Temporary pop-up message after sending request */}
-      {showNotification && (
-        <View style={styles.notification}>
-          <Text style={styles.notificationText}>{notificationMessage}</Text>
+                return (
+                  <TravelerCard
+                    traveler={item}
+                    onConnect={handleConnect}
+                    requestStatus={requestStatus}
+                    isIncomingRequest={isIncomingRequest}
+                    isConnected={isConnected}
+                  />
+                );
+              }}
+              contentContainerStyle={[styles.list, platformSpacing]}
+              showsVerticalScrollIndicator={false}
+            />
+          )}
         </View>
-      )}
 
-      <Footer />
-    </View>
+        {/* Temporary pop-up message after sending request */}
+        {showNotification && (
+          <View style={styles.notification}>
+            <Text style={styles.notificationText}>{notificationMessage}</Text>
+          </View>
+        )}
+
+        <Footer />
+      </View>
+    </ScreenWrapper>
   );
 }
 
 const styles = StyleSheet.create({
   container: { 
     flex: 1, 
-    backgroundColor: colors.secondary 
+    backgroundColor: colors.secondary,
+    paddingHorizontal: wp(4),  // More responsive horizontal padding using wp
   },
-  backButtonContainer: { 
+  backButtonContainer: {
     position: 'absolute', 
-    top: 42, 
-    left: 5, 
+    top: hp(5), 
+    left: wp(1.5), 
     zIndex: 10 
   },
   content: { 
     flex: 1, 
-    padding: 20 
+    paddingTop: hp(2),
+    paddingHorizontal: wp(2),
   },
-  list: { paddingBottom: 20 },
+  list: { 
+    paddingBottom: hp(2.5),  // More responsive bottom padding
+  },
   loadingText: { 
     color: colors.white, 
     textAlign: 'center', 
-    marginTop: 20 
+    marginTop: hp(2.5),
+    fontSize: wp(4),  // Responsive font size
   },
   noTravelersText: {
     color: colors.white,
     textAlign: 'center',
-    marginTop: 40,
-    fontSize: 16,
+    marginTop: hp(5),
+    fontSize: wp(4),
   },
   notification: {
     position: 'absolute',
-    bottom: 100,
-    left: 0,
-    right: 0,
+    bottom: hp(12),  // Responsive positioning
+    left: wp(5),
+    right: wp(5),
     backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    paddingVertical: 12,
-    margin: 20,
-    borderRadius: 8,
+    paddingVertical: hp(1.5),
+    borderRadius: wp(2),
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   notificationText: {
     color: colors.black,
     fontWeight: 'bold',
-    fontSize: 16,
+    fontSize: wp(4),  // Responsive font size
   },
 });
