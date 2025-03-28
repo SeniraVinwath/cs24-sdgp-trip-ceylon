@@ -2,7 +2,11 @@ const express = require("express");
 const router = express.Router();
 const { getAccessToken } = require("../controllers/authController");
 const { trackDevice } = require("../controllers/trackController");
-const { registerLuggage } = require("../controllers/luggageController");
+const {
+  registerLuggage,
+  getRegisteredLuggage,
+  deleteLuggage,
+} = require("../controllers/luggageController");
 const { generateTravelPlan } = require("../controllers/travelController");
 
 router.post("/data", async (req, res) => {
@@ -32,24 +36,66 @@ router.post("/data", async (req, res) => {
   }
 });
 
-router.post("/registerLuggage", async (req, res) => {
-  const { imei, luggageDetails } = req.body;
+router.post("/register-luggage", async (req, res) => {
+  const { userId, luggageName, account, imei, password } = req.body;
 
-  if (!imei || !luggageDetails) {
-    return res
-      .status(400)
-      .json({ error: "IMEI and luggage details are required" });
+  if (!luggageName || !account || !imei || !password) {
+    return res.status(400).json({ error: "All details are required" });
   }
 
   try {
-    const luggageData = await registerLuggage(imei, luggageDetails);
+    const luggageData = await registerLuggage(
+      userId,
+      luggageName,
+      account,
+      imei,
+      password
+    );
     res
       .status(200)
       .json({ message: "Luggage registered successfully", data: luggageData });
   } catch (error) {
+    console.error("Error registering luggage:", error);
     res.status(500).json({ error: "Error registering luggage" });
   }
 });
+
+// Fetch Registered Luggage by User ID
+router.get("/registered-luggage", async (req, res) => {
+  const { userId } = req.query;
+
+  if (!userId) {
+    return res.status(400).json({ error: "userId is required" });
+  }
+
+  try {
+    const luggage = await getRegisteredLuggage(userId);
+    res.status(200).json({ success: true, luggage });
+  } catch (error) {
+    console.error("Error fetching registered luggage:", error);
+    res.status(500).json({ error: "Error fetching registered luggage" });
+  }
+});
+
+// Delete Luggage
+router.delete("/registered-luggage/:luggageId", async (req, res) => {
+  let { luggageId } = req.params;
+
+  try {
+    luggageId = BigInt(luggageId);
+
+    const result = await deleteLuggage(luggageId);
+    if (result) {
+      res.status(200).json({ message: "Luggage deleted successfully" });
+    } else {
+      res.status(404).json({ error: "Luggage not found" });
+    }
+  } catch (error) {
+    console.error("Error deleting luggage:", error);
+    res.status(500).json({ error: "Error deleting luggage" });
+  }
+});
+
 
 router.post("/travelPlanGenerator", async (req, res) => {
   const {
