@@ -38,6 +38,19 @@ import Globe from './Globe';
 import Share4 from './Share4';
 import Bookmark from './Bookmark';
 import Send from './Send';
+import FindTravelers from './FindTravelers';
+import MyConnections from './MyConnections';
+import Pending from './Pending';
+import ViewMap from './ViewMap';
+import Anon from './Anon';
+import Beach from './Beach';
+import Surf from './Surf';
+import City from './City';
+import History from './History';
+import Culture from './Culture';
+import Hill from './Hill';
+import Safari from './Safari';
+import Adventure from './Adventure';
 
 const icons = {
     home: Home,
@@ -77,6 +90,20 @@ const icons = {
     share4: Share4,
     bookmark: Bookmark,
     send: Send,
+    findTravelers: FindTravelers,
+    myConnections: MyConnections,
+    pending: Pending,
+    viewMap: ViewMap,
+    anon: Anon,
+    beach: Beach,
+    surf: Surf,
+    city: City,
+    history: History,
+    culture: Culture,
+    hill: Hill,
+    safari: Safari,
+    adventure: Adventure,
+
 };
 
 const Icon = ({ name, ...props }) => {
