@@ -276,8 +276,6 @@ const styles = StyleSheet.create({
     gap: hp(1),
     marginTop: hp(2),
     paddingBottom: hp(3),
-    borderBottomWidth: 2,
-    borderBottomColor: theme.colors.textDark2,
   },
   info: {
     flexDirection: 'row',
