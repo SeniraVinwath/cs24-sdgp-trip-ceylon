@@ -236,7 +236,7 @@ const Home = () => {
               
               <Pressable 
                 style={styles.dropdownItem} 
-                onPress={() => handleDropdownOption('luggage')}
+                onPress={() => handleDropdownOption('LuggageDashboard')}
                 hitSlop={{top: hp(0.5), bottom: hp(0.5), left: wp(0.5), right: wp(0.5)}}
               >
                 <Icon name="luggage" size={hp(3.2)} strokeWidth={2}/>
@@ -252,7 +252,7 @@ const Home = () => {
               
               <Pressable 
                 style={[styles.dropdownItem, styles.lastDropdownItem]} 
-                onPress={() => handleDropdownOption('itinerary')}
+                onPress={() => handleDropdownOption('itinerary-home')}
                 hitSlop={{top: hp(0.5), bottom: hp(0.5), left: wp(0.5), right: wp(0.5)}}
               >
                 <Icon name="itinerary" size={hp(3.2)} strokeWidth={2}/>
