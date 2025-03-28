@@ -1,18 +1,28 @@
 import React, { useState, useEffect } from 'react';
-import { View, FlatList, Text, StyleSheet, TouchableOpacity, StatusBar } from 'react-native';
+import { View, FlatList, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
-import Header from '../components/Header.jsx';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Footer from '../components/Footer.jsx';
-import BackButton from '../components/BackButton.jsx';
 import { supabase } from '../lib/supabase.js';
 import colors from '../constants/colors.js';
 import typography from '../constants/typography.js';
 import { Image } from 'react-native'; 
+import Head from '../components/Head';
+import ScreenWrapper from '../components/ScreenWrapper';
+import { hp, wp } from '../helpers/common.js';
 
 export default function Requests() {
   const [requests, setRequests] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
+  const insets = useSafeAreaInsets();
+
+  const platformSpacing = { 
+    paddingBottom: Platform.select({ 
+      ios: Math.max(insets.bottom, hp(2)), 
+      android: Math.max(insets.bottom, hp(2)), 
+    }), 
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -48,11 +58,7 @@ export default function Requests() {
           }
           return req;
         });
-
-       
-       
-        // console.log("Raw Supabase Data:", data);
-        // console.log("Processed Requests:", processedRequests); 
+        
         setRequests(processedRequests);
   
       } catch (error) {
@@ -62,7 +68,6 @@ export default function Requests() {
       }
     };
     
-  
     fetchData();
   }, []);
 
@@ -82,7 +87,6 @@ export default function Requests() {
         .from('connections')
         .insert([
           { user_id: request.requested_id, connected_user_id: request.requester_id },
-          
         ]);
 
       if (connectionError) throw connectionError;
@@ -127,151 +131,167 @@ export default function Requests() {
   };
 
   return (
-    <View style={styles.container}>
-      <StatusBar backgroundColor={colors.primary} barStyle="light-content" />
-      <View style={styles.backButtonContainer}>
-        <BackButton router={router} />
-      </View>
-      <Header title="Pending Requests" subtitle="Manage connection requests" />
-      <View style={styles.content}>
-        {isLoading ? (
-          <Text style={styles.loadingText}>Loading...</Text>
-        ) : requests.length === 0 ? (
-          <Text style={styles.noRequestsText}>No pending requests</Text>
-        ) : (
-          <FlatList
-            data={requests}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item }) => (
-              <View style={styles.requestCard}>
-                <View style={styles.profileContainer}>
-                <Image
-                  source={item.travelers?.image?
-                    { uri: item.travelers.image}: 
-                  require('../assets/images/defaultUserIMG.jpg')}
-                  style={styles.profileImage}
-                  onError={(e) => console.log("Image failed to load:", e.nativeEvent.error)}
-                  />
-                <Text style={styles.requesterName}>
-                  {item.travelers?.user_name || 'Unknown User'} wants to connect!
-                </Text>
+    <ScreenWrapper bg={colors.secondary} statusBarStyle="light-content">
+      <View style={styles.container}>
+        <Head title="Friend Requests" />
+        <View style={[styles.content, { paddingHorizontal: wp(4) }]}>
+          {isLoading ? (
+            <Text style={styles.loadingText}>Loading...</Text>
+          ) : requests.length === 0 ? (
+            <Text style={styles.noRequestsText}>No pending requests</Text>
+          ) : (
+            <FlatList
+              data={requests}
+              keyExtractor={(item) => item.id.toString()}
+              renderItem={({ item }) => (
+                <View style={styles.requestCard}>
+                  <View style={styles.profileContainer}>
+                    <Image
+                      source={item.travelers?.image
+                        ? { uri: item.travelers.image }
+                        : require('../assets/images/defaultUserIMG.jpg')}
+                      style={styles.profileImage}
+                      onError={(e) => console.log("Image failed to load:", e.nativeEvent.error)}
+                    />
+                    <Text style={styles.requesterName}>
+                      {item.travelers?.user_name || 'Unknown User'} wants to connect!
+                    </Text>
+                  </View>
+                  <View style={styles.buttonContainer}>
+                    <TouchableOpacity
+                      style={styles.viewButton}
+                      onPress={() => handleViewProfile(item.requester_id)}
+                    >
+                      <Text style={styles.buttonText}>View Profile</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.acceptButton}
+                      onPress={() => handleAccept(item.id)}
+                    >
+                      <Text style={styles.buttonText}>Accept</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.declineButton}
+                      onPress={() => handleDecline(item.id)}
+                    >
+                      <Text style={styles.buttonText}>Decline</Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
-                <View style={styles.buttonContainer}>
-                  <TouchableOpacity
-                    style={styles.viewButton}
-                    onPress={() => handleViewProfile(item.requester_id)}
-                  >
-                    <Text style={styles.buttonText}>View Profile</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.acceptButton}
-                    onPress={() => handleAccept(item.id)}
-                  >
-                    <Text style={styles.buttonText}>Accept</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.declineButton}
-                    onPress={() => handleDecline(item.id)}
-                  >
-                    <Text style={styles.buttonText}>Decline</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            )}
-            contentContainerStyle={styles.list}
-          />
-        )}
+              )}
+              contentContainerStyle={[
+                styles.list, 
+                platformSpacing,
+                { paddingHorizontal: wp(2) }
+              ]}
+            />
+          )}
+        </View>
+        <Footer />
       </View>
-      <Footer />
-    </View>
+    </ScreenWrapper>
   );
 }
-
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.secondary,
-  },
-  backButtonContainer: {
-    position: "absolute",
-    top: 42,
-    left: 5,
-    zIndex: 10,
+    paddingHorizontal: hp(2)
   },
   content: {
     flex: 1,
-    padding: 20,
+    paddingTop: hp(2),
+    paddingBottom: hp(2),
   },
   list: {
-    paddingBottom: 20,
+    paddingBottom: hp(4),
   },
   requestCard: {
     backgroundColor: '#222222',
-    borderRadius: 10,
-    padding: 15,
-    marginBottom: 15,
+    borderRadius: wp(3),
+    padding: wp(4),
+    marginBottom: hp(2),
     alignItems: 'center',
+    width: '100%',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  profileContainer: {
+    alignItems: 'center',
+    marginBottom: hp(1.5),
+    width: '100%',
+  },
+  profileImage: {
+    width: wp(15),
+    height: wp(15),
+    borderRadius: wp(7.5),
+    borderWidth: 2,
+    borderColor: 'white',
+    marginBottom: hp(1),
   },
   requesterName: {
     ...typography.cardTitle,
     color: colors.white,
-    fontSize: 18,
+    fontSize: wp(4.5),
     fontWeight: 'bold',
-    marginBottom: 10,
+    marginBottom: hp(1.5),
+    textAlign: 'center',
   },
   buttonContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     width: '100%',
+    flexWrap: Platform.OS === 'ios' ? 'nowrap' : 'wrap',
   },
   viewButton: {
     backgroundColor: colors.primary,
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 25,
-    marginRight: 10,
+    paddingVertical: hp(1.2),
+    paddingHorizontal: wp(4),
+    borderRadius: wp(6),
+    marginRight: wp(1.5),
+    minWidth: wp(25),
+    alignItems: 'center',
   },
   acceptButton: {
     backgroundColor: colors.buttonGreen,
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 25,
-    marginRight: 10,
+    paddingVertical: hp(1.2),
+    paddingHorizontal: wp(4),
+    borderRadius: wp(6),
+    marginRight: wp(1.5),
+    minWidth: wp(22),
+    alignItems: 'center',
   },
   declineButton: {
     backgroundColor: 'red',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 25,
+    paddingVertical: hp(1.2),
+    paddingHorizontal: wp(4),
+    borderRadius: wp(6),
+    minWidth: wp(22),
+    alignItems: 'center',
   },
   buttonText: {
     color: colors.white,
     fontWeight: 'bold',
-    fontSize: 16,
+    fontSize: wp(3.8),
+    textAlign: 'center',
   },
   noRequestsText: {
     color: colors.white,
     textAlign: 'center',
-    marginTop: 40,
-    fontSize: 16,
+    marginTop: hp(5),
+    fontSize: wp(4),
   },
   loadingText: {
     color: colors.white,
     textAlign: 'center',
-    marginTop: 20,
+    marginTop: hp(2.5),
+    fontSize: wp(4),
   },
-  profileContainer: {
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  
-  profileImage: {
-    width: 60,
-    height: 60,
-    borderRadius: 30, 
-    borderWidth: 2,
-    borderColor: 'white',
-    marginBottom: 5,
-  },
-});
+})
