@@ -76,49 +76,50 @@ const generateTravelPlan = async ({
 
   const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
   const prompt = `
-    Take the following travel itinerary JSON and generate a human-readable description.
+    Generate a structured travel itinerary in JSON format based on the following input.
 
     Input JSON:
     ${JSON.stringify(itineraryData, null, 2)}
 
-    give JSON output so ican put them in a Sample template like below one
+    The output must strictly follow this JSON structure:
 
-    ==================================================
-    DETAILED ITINERARY PLAN
-    ==================================================
-    Trip Duration: 7 days
-    Pace: Balanced
-    Number of Travelers: 2
-    Budget Estimate Per Person: $979.06
-    Total Group Budget: $1958.11
-    Total Locations: 21
-    ==================================================
+    {
+      "title": "Trip Title",
+      "trip_summary": {
+        "trip_duration": 7,
+        "pace": "Balanced",
+        "num_travelers": 2,
+        "budget_estimate_per_person": 979.06,
+        "total_group_budget": 1958.11,
+        "total_locations": 21
+      },
+      "daily_itineraries": [
+        {
+          "day": 1,
+          "description": "Short description of the day's activities",
+          "locations": [
+            {
+              "name": "Location Name",
+              "types": "Beach, Surfing, Adventure",
+              "rating": 14.05,
+              "distance_to_next": "98.0 km"
+            }
+          ],
+          "total_travel_distance": "244.0 km"
+        }
+      ],
+      "budget_breakdown": { (calculate minimal budget plan)
+        "transportation": 120.05,
+        "accommodation": 350.00,
+        "food": 210.00,
+        "activities": 210.00,
+        "total_per_person": 979.06,
+        "total_for_group": 1958.11
+      }
+    }
 
-    DAY 1: Friday, April 11, 2025
-    Description: Kick off your trip on Saturday, April 05, 2025, in Marble Beach, a hotspot for beach fun, surfing, and adventure!
-    --------------------------------------------------
-    Location 1: Marble Bay - Beach
-      Rating: 13.06/15.0
-      Distance to next: 98.0 km
-    Location 2: Pasikuda - Beach
-      Rating: 13.66/15.0
-      Distance to next: 146.0 km
-    Location 3: Arugam Bay - Beach, Surfing, Adventure
-      Rating: 14.05/15.0
-
-    Total travel distance for Day 7: 244.0 km
-
-    ==================================================
-    BUDGET BREAKDOWN (PER PERSON)
-    ==================================================
-    Transportation: $120.05 (shared cost)
-    Accommodation: $350.00
-    Food: $210.00
-    Activities: $210.00
-    --------------------------------------------------
-    Total Per Person: $979.06
-    Total for Group (2 travelers): $1958.11
-  `;
+    Ensure the response is a valid JSON object, does not contain markdown formatting (like \`\`\`json \`\`\`), and adheres strictly to the structure above.
+    `;
 
   const result = await model.generateContent(prompt);
   const enhancedResponse = result.response.text();
