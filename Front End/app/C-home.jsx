@@ -1,35 +1,41 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Image, Alert } from 'react-native';
+import { View, Text, StyleSheet, Image, Alert, Platform, Pressable } from 'react-native';
 import * as Location from 'expo-location';
 import { useRouter } from 'expo-router';
 import { Link } from 'expo-router';
 import { useAuth } from '../contexts/AuthContext';
-import { supabase } from '../lib/supabase'; // Supabase-native import
-import Header from '../components/Header';
-import Footer from '../components/Footer';
-import BackButton from '../components/BackButton';
+import { supabase } from '../lib/supabase';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import colors from '../constants/colors';
-import typography from '../constants/typography';
+import ScreenWrapper from '../components/ScreenWrapper';
+import { wp, hp } from '../helpers/common';
+import Head from '../components/Head';
+import Icon from '../assets/icons';
 
 export default function HomeScreen() {
   const [location, setLocation] = useState(null);
-  const { user } = useAuth(); // Get logged-in user data
+  const { user } = useAuth();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
+
+  const platformSpacing = {
+    paddingBottom: Platform.select({
+      ios: Math.max(insets.bottom, hp(2)),
+      android: Math.max(insets.bottom, hp(2)),
+    }),
+  };
 
   useEffect(() => {
     const requestLocationPermission = async () => {
-      // Asking for location permission from user
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
         Alert.alert("Permission Denied", "We need location access to find nearby travelers.");
         return;
       }
 
-      // Fetching user's current location
       const userLocation = await Location.getCurrentPositionAsync({});
       const { latitude, longitude } = userLocation.coords;
       setLocation({ latitude, longitude });
-
 
       const user_id = user?.id;
       if (!user_id) {
@@ -37,7 +43,6 @@ export default function HomeScreen() {
         return;
       }
 
-      // Store location using Supabase
       const { error } = await supabase
         .from('user_locations')
         .upsert([
@@ -58,78 +63,126 @@ export default function HomeScreen() {
     requestLocationPermission();
   }, []);
 
+  // Direct navigation handler function
+  const navigateTo = (path) => {
+    router.push(path);
+  };
+
   return (
-    <View style={styles.container}>
-      <View style={styles.backButtonContainer}>
-        <BackButton router={router} />
+    <ScreenWrapper bg="#303030">
+      <View style={[styles.container, platformSpacing]}>
+        <Head title="Stay Connected" />
+
+        <View style={styles.menuContainer}>
+          <View style={styles.gridContainer}>
+            {/* Option 1: Using Link with Pressable */}
+            <Link href="/find-travelers" asChild>
+              <Pressable style={styles.menuItem}>
+                <View style={styles.iconContainer}>
+                  <Icon name="findTravelers" size={hp(3.2)} strokeWidth={2}/>
+                </View>
+                <Text style={styles.menuItemText}>Nearby{'\n'}Travelers</Text>
+              </Pressable>
+            </Link>
+
+            {/* Option 2: Using Pressable with router.push */}
+            <Pressable 
+              style={styles.menuItem} 
+              onPress={() => navigateTo('/MyConnectionsScreen')}
+            >
+              <View style={styles.iconContainer}>
+                <Icon name="myConnections" size={hp(3.2)} strokeWidth={2}/>
+              </View>
+              <Text style={styles.menuItemText}>My{'\n'}Connections</Text>
+            </Pressable>
+
+            <Pressable 
+              style={styles.menuItem} 
+              onPress={() => navigateTo('/requests')}
+            >
+              <View style={styles.iconContainer}>
+                <Icon name="pending" size={hp(3.2)} strokeWidth={2}/>
+              </View>
+              <Text style={styles.menuItemText}>Pending{'\n'}Requests</Text>
+            </Pressable>
+
+            <Pressable 
+              style={styles.menuItem} 
+              onPress={() => navigateTo('/ConnectionsMap')}
+            >
+              <View style={styles.iconContainer}>
+                <Icon name="viewMap" size={hp(3.2)} strokeWidth={2}/>
+              </View>
+              <Text style={styles.menuItemText}>View on{'\n'}Map</Text>
+            </Pressable>
+          </View>
+          
+          {/* Added Image Component */}
+          <View style={styles.imageContainer}>
+            <Image
+              source={require('../assets/images/c-home img2.png')} 
+              style={styles.image}
+              resizeMode="contain"
+            />
+          </View>
+        </View>
       </View>
-
-      <Header title="Find Travel Companions" subtitle="Connect with travelers exploring Sri Lanka" />
-
-      <View style={styles.menuContainer}>
-        <Text style={styles.menuTitle}>MENU</Text>
-
-        <Link href="/find-travelers" style={styles.menuItem}>
-          <Text style={styles.menuItemText}>Find Travelers</Text>
-        </Link>
-
-        <Link href="/MyConnectionsScreen" style={styles.menuItem}>
-          <Text style={styles.menuItemText}>My Connections</Text>
-        </Link>
-
-        <Link href="/requests" style={styles.menuItem}>
-          <Text style={styles.menuItemText}> Connection Requests</Text>
-        </Link>
-
-        <Link href="/ConnectionsMap" style={styles.menuItem}>
-          <Text style={styles.menuItemText}> View on Map</Text>
-        </Link>
-
-        <Image source={require('../assets/images/LANDING IMAGE.png')} style={styles.map} resizeMode="contain" />
-      </View>
-
-      <Footer />
-    </View>
+    </ScreenWrapper>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.secondary,
-  },
-  backButtonContainer: {
-    position: "absolute",
-    top: 42,
-    left: 5,
-    zIndex: 10,
+    paddingHorizontal: hp(2),
   },
   menuContainer: {
     flex: 1,
-    padding: 20,
-    alignItems: 'center',
+    paddingHorizontal: wp(3),
+    paddingTop: hp(3),
+    paddingBottom: hp(4),
   },
-  menuTitle: {
-    ...typography.heading,
-    marginBottom: 20,
+  gridContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
   },
   menuItem: {
-    backgroundColor: '#222222',
-    width: '100%',
-    padding: 15,
-    borderRadius: 10,
-    marginBottom: 15,
+    backgroundColor: 'rgba(60, 60, 60, 0.8)',
+    width: '48%',
+    aspectRatio: 1,
+    padding: hp(2),
+    borderRadius: 16,
+    marginBottom: hp(2),
     alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  iconContainer: {
+    backgroundColor: '#303030',
+    borderRadius: hp(3),
+    width: hp(6),
+    height: hp(6),
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: hp(1.5),
   },
   menuItemText: {
     color: colors.white,
-    fontSize: 18,
+    fontSize: hp(1.8),
     fontWeight: '500',
+    textAlign: 'center',
+    lineHeight: hp(2.2),
   },
-  map: {
-    width: '80%',
-    height: 220,
-    marginTop: 10,
-    marginLeft: 10,
+  imageContainer: {
+    width: '100%',
+    alignItems: 'center',
   },
-});
+  image: {
+    width: '100%',
+    height: hp(40),
+  }
+})
