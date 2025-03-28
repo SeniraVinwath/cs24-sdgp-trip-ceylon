@@ -88,7 +88,7 @@ export default function MyConnectionsScreen({ userId }) {
     }
   };
 
-  // View a traveler's profile with loading state
+  // Pre-fetch user data before navigating to reduce the flash
   const handleViewProfile = async (connection) => {
     try {
       // Set loading state for this specific connection
@@ -103,16 +103,33 @@ export default function MyConnectionsScreen({ userId }) {
       const otherUserId = connection.connected_user_id === user.id 
         ? connection.user_id 
         : connection.connected_user_id;
+      
+      // Pre-fetch the user data to warm the cache
+      await supabase
+        .from('travelers')
+        .select('*')
+        .eq('id', otherUserId)
+        .single();
         
-      router.push({
-        pathname: '/ViewProfile',
-        params: {requesterId: otherUserId},
-      });
+      // Use a small timeout to ensure animation feels smoother
+      setTimeout(() => {
+        router.push({
+          pathname: '/ViewProfile',
+          params: {
+            requesterId: otherUserId,
+            // Add a transition hint to maintain dark background
+            transition: 'fade'
+          },
+        });
+        // Remove the timeout if it causes other issues
+      }, 100);
     } catch (error) {
       console.error('Error determining profile to view:', error);
     } finally {
-      // Clear loading state
-      setLoadingProfileId(null);
+      // Clear loading state after a short delay to ensure smooth transition
+      setTimeout(() => {
+        setLoadingProfileId(null);
+      }, 300);
     }
   };
 
@@ -129,7 +146,10 @@ export default function MyConnectionsScreen({ userId }) {
         <Head title="Your Connections" />
         <View style={[styles.content, { paddingHorizontal: wp(4) }]}>
           {isLoading ? (
-            <Text style={styles.loadingText}>Loading...</Text>
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color={colors.primary} />
+              <Text style={styles.loadingText}>Loading connections...</Text>
+            </View>
           ) : connections.length > 0 ? (
             <FlatList
               data={connections}
@@ -240,6 +260,11 @@ const styles = StyleSheet.create({
     height: wp(10),
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   loadingText: {
     color: colors.white,
