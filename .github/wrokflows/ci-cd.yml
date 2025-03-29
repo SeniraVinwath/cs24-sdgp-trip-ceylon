@@ -1,0 +1,59 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      # 1. Checkout your repository
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      # 2. Setup Node.js (use version 18)
+      - name: Setup Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '18.x'
+
+      # 3. Install Node.js dependencies
+      - name: Install Node.js dependencies
+        run: npm install
+        working-directory: "Back End"
+
+      # (Optional) Run Node.js tests
+      # - name: Run Node.js tests
+      #   run: npm test
+      #   working-directory: "Back End"
+
+      # 4. Setup Python
+      - name: Setup Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.x'
+
+      # 5. Install Python dependencies (from itinerary/requirements.txt)
+      - name: Install Python dependencies
+        run: |
+          cd "Back End/itinerary"
+          pip install -r requirements.txt
+
+      # 6. (Optional) Remove or comment out the direct Python script run
+      #    Because the script should only run when triggered by the front end:
+      #
+      # - name: Run Python Script
+      #   run: |
+      #     cd "Back End/itinerary"
+      #     python PYTHON_SCRIPT_WITH_REAL_DATA.py
+
+      # 7. (Optional) Deploy using Railway or another service
+      # - name: Deploy to Railway
+      #   env:
+      #     RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+      #   run: |
+      #     npm install -g railway
+      #     cd "Back End"
+      #     railway up --token $RAILWAY_TOKEN --detach
