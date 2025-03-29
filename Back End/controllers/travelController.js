@@ -42,7 +42,7 @@ const generateTravelPlan = async ({
   });
 
   const rawItinerary = await new Promise((resolve, reject) => {
-    const pythonProcess = spawn("python", [pythonScriptPath, requestData]);
+    const pythonProcess = spawn("python3", [pythonScriptPath, requestData]);
     let output = "";
     let errorOutput = "";
 
