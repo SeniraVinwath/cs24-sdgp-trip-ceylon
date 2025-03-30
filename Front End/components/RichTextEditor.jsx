@@ -3,28 +3,28 @@ import React from 'react'
 import { actions, RichEditor, RichToolbar } from 'react-native-pell-rich-editor'
 import { theme } from '../constants/theme'
 
-const RichTextEditor = ({
-  editorRef,
-  onChange
-}) => {
+const RichTextEditor = ({ editorRef, onChange }) => {
+  // Define the actions as an array to fix the type mismatch issue
+  const editorActions = [
+    actions.setStrikethrough,
+    actions.removeFormat,
+    actions.setBold,
+    actions.setItalic,
+    actions.insertOrderedList,
+    actions.blockquote,
+    actions.alignLeft,
+    actions.alignCenter,
+    actions.alignRight,
+    actions.code,
+    actions.line,
+    actions.heading2,
+    actions.heading4,
+  ]
+
   return (
     <View style={{minHeight: 285}}>
       <RichToolbar
-        actions={[
-          actions.setStrikethrough,
-          actions.removeFormat,
-          actions.setBold,
-          actions.setItalic,
-          actions.insertOrderedList,
-          actions.blockquote,
-          actions.alignLeft,
-          actions.alignCenter,
-          actions.alignRight,
-          actions.code,
-          actions.line,
-          actions.heading2,
-          actions.heading4,
-        ]}
+        actions={editorActions}
         iconMap={{
           [actions.heading2]: ({tintColor}) => <Text style={{color: tintColor}}>H2</Text>,
           [actions.heading4]: ({tintColor}) => <Text style={{color: tintColor}}>H4</Text>
@@ -32,23 +32,22 @@ const RichTextEditor = ({
         style={styles.richBar}
         flatContainerStyle={styles.flatStyle}
         editor={editorRef}
-        iconTint = {'#c3c2c2'}
-        selectedIconTint = {'#9DD900'}
+        iconTint={'#c3c2c2'}
+        selectedIconTint={'#9DD900'}
         disabled={false}
       />
-
+      
       <RichEditor
         ref={editorRef}
         containerStyle={styles.rich}
         editorStyle={styles.contentStyle}
         placeholder={"What's on your mind?"}
         onChange={onChange}
+        initialContentHTML=""
       />
     </View>
   )
 }
-
-export default RichTextEditor
 
 const styles = StyleSheet.create({
   richBar: {
@@ -76,3 +75,5 @@ const styles = StyleSheet.create({
     gap: 3,
   }
 })
+
+export default RichTextEditor

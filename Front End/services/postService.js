@@ -1,5 +1,26 @@
 import { supabase } from "../lib/supabase";
 import { uploadFile } from "./imageService";
+import { Platform } from 'react-native';
+
+// Helper function to determine if a file is supported on the current device
+const isVideoFormatSupported = (fileUrl) => {
+    if (!fileUrl) return true; // If no file, consider it supported
+    
+    // Extract file extension
+    const extension = fileUrl.split('.').pop().toLowerCase();
+    
+    // Common video formats
+    const supportedFormats = {
+        ios: ['mp4', 'mov', 'm4v'],
+        android: ['mp4', '3gp', 'webm', 'mkv']
+    };
+    
+    if (!extension || extension === fileUrl) return true; // Can't determine format
+    
+    return Platform.OS === 'ios' 
+        ? supportedFormats.ios.includes(extension)
+        : supportedFormats.android.includes(extension);
+};
 
 export const createOrUpdatePost = async (post) => {
     try {
@@ -14,6 +35,13 @@ export const createOrUpdatePost = async (post) => {
         if (post.file && typeof post.file == 'object') {
             let isImage = post?.file?.type == 'image';
             let folderName = isImage ? 'postImages' : 'postVideos';
+            
+            // For videos, add handling for different formats
+            if (!isImage) {
+                // You might want to add compression or format conversion here
+                // depending on your app's requirements
+            }
+            
             let fileResult = await uploadFile(folderName, post?.file?.uri, isImage);
             if (fileResult.success) formattedPost.file = fileResult.data;
             else {
@@ -36,7 +64,7 @@ export const createOrUpdatePost = async (post) => {
     }
 }
 
-export const fetchPosts = async (currentUserId, limit=10) => {
+export const fetchPosts = async (currentUserId, limit = 10) => {
     try{
         const {data, error} = await supabase
         .from('posts')
@@ -57,7 +85,11 @@ export const fetchPosts = async (currentUserId, limit=10) => {
             ...post,
             likeCount: post.postLikes?.length || 0,
             userLiked: post.postLikes?.some(like => like.userId === currentUserId) || false,
-            commentCount: post.comment_count?.[0]?.count || 0
+            commentCount: post.comment_count?.[0]?.count || 0,
+            // Add info about video support
+            videoSupported: post.file && !post.file.includes('/postImages/') 
+                ? isVideoFormatSupported(post.file)
+                : true
         }));
 
         return {success: true, data: transformed};
@@ -66,7 +98,7 @@ export const fetchPosts = async (currentUserId, limit=10) => {
     }
 }
 
-export const fetchUserPosts = async (currentUserId, limit=10) => {
+export const fetchUserPosts = async (currentUserId, limit = 10) => {
     try{
         const {data, error} = await supabase
         .from('posts')
@@ -88,7 +120,11 @@ export const fetchUserPosts = async (currentUserId, limit=10) => {
             ...post,
             likeCount: post.postLikes?.length || 0,
             userLiked: post.postLikes?.some(like => like.userId === currentUserId) || false,
-            commentCount: post.comment_count?.[0]?.count || 0
+            commentCount: post.comment_count?.[0]?.count || 0,
+            // Add info about video support
+            videoSupported: post.file && !post.file.includes('/postImages/') 
+                ? isVideoFormatSupported(post.file)
+                : true
         }));
 
         return {success: true, data: transformed};
@@ -148,7 +184,11 @@ export const fetchPostDetails = async (postId, currentUserId) => {
         const transformedData = {
             ...data,
             likeCount: data.postLikes?.length || 0,
-            userLiked: data.postLikes?.some(like => like.userId === currentUserId) || false
+            userLiked: data.postLikes?.some(like => like.userId === currentUserId) || false,
+            // Add info about video support
+            videoSupported: data.file && !data.file.includes('/postImages/') 
+                ? isVideoFormatSupported(data.file)
+                : true
         };
         
         return {success: true, data: transformedData};

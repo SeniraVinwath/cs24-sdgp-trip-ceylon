@@ -10,7 +10,7 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRoute } from '@react-navigation/native';
 
-const DisplayScreen = ({ title = "Your Itinerary" }) => {
+const DisplayScreen = ({ title }) => {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const route = useRoute();

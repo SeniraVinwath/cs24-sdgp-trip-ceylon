@@ -41,7 +41,13 @@ jobs:
           cd "Back End/itinerary"
           pip install -r requirements.txt
 
-      # 6. (Optional) Remove or comment out the direct Python script run
+      # 6. Run Node.js tests
+      - name: Run Tests
+        run: |
+          cd "Back End"
+          npm test
+
+      # 7. (Optional) Remove or comment out the direct Python script run
       #    Because the script should only run when triggered by the front end:
       #
       # - name: Run Python Script
@@ -49,7 +55,7 @@ jobs:
       #     cd "Back End/itinerary"
       #     python PYTHON_SCRIPT_WITH_REAL_DATA.py
 
-      # 7. (Optional) Deploy using Railway or another service
+      # 8. (Optional) Deploy using Railway or another service
       # - name: Deploy to Railway
       #   env:
       #     RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}

@@ -1,5 +1,5 @@
 import { Alert, Platform, Share, StyleSheet, Text, View, ToastAndroid } from 'react-native'
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { theme } from '../constants/theme'
 import { hp, stripHtmlTags, wp } from '../helpers/common'
 import Avatar from '../components/Avatar'
@@ -17,6 +17,7 @@ import * as FileSystem from 'expo-file-system'
 import * as Sharing from 'expo-sharing';
 import * as Clipboard from 'expo-clipboard';
 import Loading from './Loading'
+import NetInfo from '@react-native-community/netinfo'; // You'll need to install this package
 
 const textStyle = {
     color: theme.colors.textDark2,
@@ -51,9 +52,25 @@ const PostCard = ({
     const [likes, setLikes] = useState([]);
     const [likeLoading, setLikeLoading] = useState(false);
     const [shareLoading, setShareLoading] = useState(false);
+    const [videoError, setVideoError] = useState(null);
+    const [isConnected, setIsConnected] = useState(true);
+    const videoRef = useRef(null);
 
     useEffect(() => {
         checkWishlistStatus();
+        
+        // Subscribe to network connectivity changes
+        const unsubscribe = NetInfo.addEventListener(state => {
+            setIsConnected(state.isConnected);
+        });
+        
+        return () => {
+            unsubscribe();
+            // Unload video when component unmounts
+            if (videoRef.current) {
+                videoRef.current.unloadAsync();
+            }
+        };
     }, [item?.locationId, currentUser?.location_wishlist]);
 
     useEffect(() => {
@@ -98,50 +115,55 @@ const PostCard = ({
         }
     }
 
+    const onShare = async () => {
+        try {
+            const message = stripHtmlTags(item?.body);
 
-const onShare = async () => {
-    try {
-        const message = stripHtmlTags(item?.body);
+            setShareLoading(true);
+            if (!item?.file) {
+                await Share.share({ message });
+                setShareLoading(false);
+                return;
+            }
 
-        setShareLoading(true);
-        if (!item?.file) {
-            await Share.share({ message });
-            setShareLoading(false);
-            return;
-        }
-
-        const fileUrl = getSupabaseFileUrl(item?.file).uri;
-        const localUrl = await downloadFile(fileUrl);
-        
-        if (!localUrl || !(await FileSystem.getInfoAsync(localUrl)).exists) {
-            await Share.share({ message });
-            setShareLoading(false);
-            return;
-        }
-
-        setShareLoading(false);
-
-        if (Platform.OS === 'android') {
-            await Clipboard.setStringAsync(message);
+            const fileUrl = getSupabaseFileUrl(item?.file).uri;
+            const localUrl = await downloadFile(fileUrl);
             
-            ToastAndroid.show('Text copied to clipboard! Paste after selecting app.', ToastAndroid.LONG);
-            
-            await Sharing.shareAsync(localUrl, {
-                mimeType: item?.file.includes('postVideos') ? 'video/mp4' : 'image/jpeg',
-                UTI: item?.file.includes('postVideos') ? 'public.movie' : 'public.image',
-            });
-        } else {
-            await Sharing.shareAsync(localUrl, {
-                mimeType: item?.file.includes('postVideos') ? 'video/mp4' : 'image/jpeg',
-                UTI: item?.file.includes('postVideos') ? 'public.movie' : 'public.image',
-                dialogTitle: message
-            });
+            if (!localUrl || !(await FileSystem.getInfoAsync(localUrl)).exists) {
+                await Share.share({ message });
+                setShareLoading(false);
+                return;
+            }
+
+            setShareLoading(false);
+
+            // Determine file type for proper MIME type
+            const isVideo = checkIfVideo(item?.file);
+            const mimeType = isVideo ? 'video/mp4' : 'image/jpeg';
+            const uti = isVideo ? 'public.movie' : 'public.image';
+
+            if (Platform.OS === 'android') {
+                await Clipboard.setStringAsync(message);
+                
+                ToastAndroid.show('Text copied to clipboard! Paste after selecting app.', ToastAndroid.LONG);
+                
+                await Sharing.shareAsync(localUrl, {
+                    mimeType: mimeType,
+                    UTI: uti,
+                });
+            } else {
+                await Sharing.shareAsync(localUrl, {
+                    mimeType: mimeType,
+                    UTI: uti,
+                    dialogTitle: message
+                });
+            }
+        } catch (error) {
+            console.error('Share error:', error);
+            Alert.alert('Share Error', 'Could not share this post. Please try again.');
+            setShareLoading(false);
         }
-    } catch (error) {
-        Alert.alert('Share Error', 'Could not share this post. Please try again.');
-        setShareLoading(false);
-    }
-};
+    };
 
     const getLocationName = (locationId) => {
         const location = LOCATIONS.find(loc => loc.id === parseInt(locationId));
@@ -164,16 +186,16 @@ const onShare = async () => {
         }
     };
 
-    const handlePostDelete = ()=>{
+    const handlePostDelete = () => {
         Alert.alert('Confirm', "Are you sure you want to delete this post?", [
             {
                 text: 'Cancel',
-                onPress: ()=> console.log('modal cancelled'),
+                onPress: () => console.log('modal cancelled'),
                 style: 'cancel'
             },
             {
                 text: 'Delete',
-                onPress: ()=> onDelete(item),
+                onPress: () => onDelete(item),
                 style: 'destructive'
             }
         ])
@@ -225,8 +247,44 @@ const onShare = async () => {
         }
     };
 
+    // Check if file is a video based on path or extension
+    const checkIfVideo = (filePath) => {
+        if (!filePath) return false;
+        
+        // Check by folder path
+        if (filePath.includes('postVideos')) return true;
+        
+        // Check by extension
+        const lowerFilePath = filePath.toLowerCase();
+        return lowerFilePath.endsWith('.mp4') || 
+               lowerFilePath.endsWith('.mov') || 
+               lowerFilePath.endsWith('.avi') || 
+               lowerFilePath.endsWith('.webm');
+    };
+
+    // Handle video error
+    const handleVideoError = (error) => {
+        console.error('Video playback error:', error);
+        setVideoError(error);
+    };
+
+    // Retry loading video
+    const retryVideoLoad = async () => {
+        setVideoError(null);
+        if (videoRef.current) {
+            try {
+                await videoRef.current.unloadAsync();
+                await videoRef.current.loadAsync(getSupabaseFileUrl(item.file));
+            } catch (error) {
+                console.error('Error reloading video:', error);
+                setVideoError(error);
+            }
+        }
+    };
+
     const createdAt = moment(item?.created_at).format('MMM D');
     const liked = likes?.filter(like => like.userId === currentUser?.id)[0]? true: false;
+    const isVideo = checkIfVideo(item?.file);
     
     return (
         <View style={[styles.container]}>
@@ -285,10 +343,15 @@ const onShare = async () => {
 
                 {/* Media Image */}
                 {
-                    item?.file && item?.file?.includes('postImages') && (
+                    item?.file && !isVideo && (
                         <View style={styles.mediaContainer}>
                             <View style={styles.mediaWrapper}>
-                                <Image source={getSupabaseFileUrl(item?.file)} transition={100} style={styles.postMedia} contentFit='cover'/>
+                                <Image 
+                                    source={getSupabaseFileUrl(item?.file)} 
+                                    transition={100} 
+                                    style={styles.postMedia} 
+                                    contentFit='cover'
+                                />
                             </View>
                         </View>
                     )
@@ -296,10 +359,40 @@ const onShare = async () => {
 
                 {/* post video */}
                 {
-                    item?.file && item?.file?.includes('postVideos') && (
+                    item?.file && isVideo && (
                         <View style={styles.mediaContainer}>
                             <View style={styles.mediaWrapper}>
-                                <Video style={[styles.postMedia, {height: hp(30)}]} source={getSupabaseFileUrl(item.file)} useNativeControls resizeMode='cover' isLooping />
+                                {!isConnected ? (
+                                    <View style={[styles.postMedia, styles.videoErrorContainer]}>
+                                        <Text style={styles.videoErrorText}>
+                                            Video unavailable offline
+                                        </Text>
+                                    </View>
+                                ) : videoError ? (
+                                    <TouchableOpacity 
+                                        style={[styles.postMedia, styles.videoErrorContainer]} 
+                                        onPress={retryVideoLoad}
+                                    >
+                                        <Text style={styles.videoErrorText}>
+                                            Video failed to load. Tap to retry.
+                                        </Text>
+                                    </TouchableOpacity>
+                                ) : (
+                                    <Video 
+                                        ref={videoRef}
+                                        style={[styles.postMedia, {height: hp(30)}]} 
+                                        source={getSupabaseFileUrl(item.file)} 
+                                        useNativeControls 
+                                        resizeMode='cover' 
+                                        isLooping
+                                        shouldPlay={false}
+                                        onError={handleVideoError}
+                                        progressUpdateIntervalMillis={500}
+                                        // Higher quality on iOS, lower on Android for better compatibility
+                                        rate={1.0}
+                                        volume={1.0}
+                                    />
+                                )}
                             </View>
                         </View>
                     )
@@ -429,6 +522,17 @@ const styles = StyleSheet.create({
         height: hp(40),
         width: '100%',
         backgroundColor: '#1A1A1A',
+    },
+    videoErrorContainer: {
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: hp(30),
+    },
+    videoErrorText: {
+        color: theme.colors.textWhite,
+        textAlign: 'center',
+        padding: 20,
+        fontSize: hp(1.8),
     },
     postBody: {
         marginLeft: 5,

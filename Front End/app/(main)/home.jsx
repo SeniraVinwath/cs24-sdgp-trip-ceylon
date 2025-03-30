@@ -14,14 +14,13 @@ import { supabase } from '../../lib/supabase'
 import { getUserData } from '../../services/userService'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
-var limit = 0;
-
 const Home = () => {
     const [showDropdown, setShowDropdown] = useState(false);
     const {user, setAuth} = useAuth();
     const router = useRouter();
     const insets = useSafeAreaInsets();
-
+    
+    const [limit, setLimit] = useState(4);
     const [posts, setPosts] = useState([]);
     const [hasMore, setHasMore] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
@@ -63,7 +62,6 @@ const Home = () => {
           });
 
           return updatedPosts;
-
         })
       }
     }
@@ -76,6 +74,9 @@ const Home = () => {
     }
 
     useEffect(() => {
+      // Initial fetch when component mounts
+      getPosts();
+      
       const postChannel = supabase
         .channel('posts')
         .on('postgres_changes', {event: '*', schema: 'public', table: 'posts'}, handlePostEvent)
@@ -89,10 +90,10 @@ const Home = () => {
         )
         .subscribe();
       
-        const notificationChannel = supabase
+      const notificationChannel = supabase
         .channel('notifications')
-        .on('postgres_changes', {event: 'INSERT', schema: 'public', table: 'notifications', filter: `recieverId=eq.${user.id}`}, handleNewNotification)
-        .subscribe()
+        .on('postgres_changes', {event: 'INSERT', schema: 'public', table: 'notifications', filter: `recieverId=eq.${user?.id}`}, handleNewNotification)
+        .subscribe();
 
       return () => {
         supabase.removeChannel(postChannel);
@@ -103,8 +104,7 @@ const Home = () => {
 
     const getPosts = async () => {
       if(!hasMore || !user?.id) return;
-      limit += 4;
-
+      
       try {
         const res = await fetchPosts(user.id, limit);
         if(res.success) {
@@ -116,9 +116,33 @@ const Home = () => {
       }
     }
 
+    const loadMore = async () => {
+      if(!hasMore || !user?.id) return;
+      
+      // Increment limit state with the setState function
+      setLimit(prevLimit => {
+        const newLimit = prevLimit + 4;
+        
+        // Fetch more posts with the new limit
+        fetchPosts(user.id, newLimit)
+          .then(res => {
+            if(res.success) {
+              setPosts(res.data);
+              setHasMore(res.data.length >= newLimit);
+            }
+          })
+          .catch(error => {
+            Alert.alert('Error', 'Failed to load more posts');
+          });
+          
+        return newLimit;
+      });
+    }
+
     const refreshPosts = async () => {
       try {
         setRefreshing(true);
+        // Use current limit value from state
         const res = await fetchPosts(user?.id, limit);
         if(res.success) {
           setPosts(res.data);
@@ -131,7 +155,6 @@ const Home = () => {
       }
     }
 
-    
     const dropdownAnim = useRef(new Animated.Value(0)).current;
 
     useEffect(() => {
@@ -277,7 +300,7 @@ const Home = () => {
               refreshPosts={refreshPosts}
             />
           )}
-          onEndReached={getPosts}
+          onEndReached={loadMore}
           onEndReachedThreshold={0.5}
           ListFooterComponent={hasMore ? (
             <View style={{marginVertical: posts.length === 0 ? hp(20) : hp(3)}}>

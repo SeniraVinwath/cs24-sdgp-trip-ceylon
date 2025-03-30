@@ -29,7 +29,8 @@ const NewPost = () => {
     const [editorReady, setEditorReady] = useState(false);
     const [isInitialized, setIsInitialized] = useState(false);
     const insets = useSafeAreaInsets();
-    const post = useLocalSearchParams();
+    const params = useLocalSearchParams();
+    const post = params || {};
 
     const platformSpacing = {
       paddingBottom: Platform.select({
@@ -80,38 +81,43 @@ const NewPost = () => {
     }, [post, editorReady, isInitialized]);
 
     const onPick = async (isImage) => {
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('Permission Denied', 'Please allow media access to upload files.');
-        return;
-      }
-      let mediaConfig = {
-        mediaTypes: isImage ? ImagePicker.MediaTypeOptions.Images : ImagePicker.MediaTypeOptions.Videos,
-        allowsEditing: true,
-        aspect: [4, 3],
-        quality: 0.7,
-      };
-      
-      let result = await ImagePicker.launchImageLibraryAsync(mediaConfig);
-      if (!result.canceled) {
-        console.log('Selected file:', result.assets[0]);
-        setFile(result.assets[0]);
+      try {
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== 'granted') {
+          Alert.alert('Permission Denied', 'Please allow media access to upload files.');
+          return;
+        }
+        let mediaConfig = {
+          mediaTypes: isImage ? ImagePicker.MediaTypeOptions.Images : ImagePicker.MediaTypeOptions.Videos,
+          allowsEditing: true,
+          aspect: [4, 3],
+          quality: 0.7,
+        };
+        
+        let result = await ImagePicker.launchImageLibraryAsync(mediaConfig);
+        if (!result.canceled) {
+          console.log('Selected file:', result.assets[0]);
+          setFile(result.assets[0]);
+        }
+      } catch (error) {
+        console.error('Error picking media:', error);
+        Alert.alert('Error', 'Failed to pick media. Please try again.');
       }
     };
 
     const isLocalFile = file => {
       if(!file) return null;
-      if(typeof file == 'object') return true;
+      if(typeof file === 'object') return true;
       return false;
     }
 
     const getFileType = file => {
       if(!file) return null;
       if(isLocalFile(file)){
-        return file.type;
+        return file.type || (file.uri?.includes('.mp4') ? 'video' : 'image');
       }
 
-      if(file.includes('postImages')){
+      if(typeof file === 'string' && file.includes('postImages')){
         return 'image';
       }
 
@@ -124,7 +130,8 @@ const NewPost = () => {
         return file.uri;
       }
 
-      return getSupabaseFileUrl(file)?.uri;
+      const result = getSupabaseFileUrl(file);
+      return result?.uri || '';
     }
 
     const toggleLocationPicker = () => {
@@ -165,18 +172,24 @@ const NewPost = () => {
       }
 
       setLoading(true);
-      let res = await createOrUpdatePost(data);
-      setLoading(false);
-      if(res.success){
-        setFile(null);
-        setLocationId(null);
-        bodyref.current = '';
-        if(editorRef.current?.setContentHTML) {
-          editorRef.current.setContentHTML('');
+      try {
+        let res = await createOrUpdatePost(data);
+        if(res.success){
+          setFile(null);
+          setLocationId(null);
+          bodyref.current = '';
+          if(editorRef.current?.setContentHTML) {
+            editorRef.current.setContentHTML('');
+          }
+          router.back();
+        } else {
+          Alert.alert('Post', res.msg || 'Failed to create post');
         }
-        router.back();
-      }else{
-        Alert.alert('Post', res.msg);
+      } catch (error) {
+        console.error('Error submitting post:', error);
+        Alert.alert('Error', 'An unexpected error occurred. Please try again.');
+      } finally {
+        setLoading(false);
       }
     }
 
