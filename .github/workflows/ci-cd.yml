@@ -56,4 +56,4 @@ jobs:
         run: |
           npm install -g @railway/cli
           railway up --ci --service "cs24-sdgp-trip-ceylon"
-        working-directory: "Back End"
+        # working-directory: "Back End"
