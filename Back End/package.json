@@ -4,7 +4,8 @@
   "description": "citytrack api call",
   "main": "server.js",
   "scripts": {
-    "start": "cmd /c \"call itinerary\\venv\\Scripts\\activate && node server.js\"",
+    "start": "node server.js",
+    "start:win": "cmd /c \"call itinerary\\venv\\Scripts\\activate && node server.js\"",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
