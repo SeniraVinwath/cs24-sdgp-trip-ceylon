@@ -42,18 +42,18 @@ jobs:
         working-directory: "Back End"
 
   deploy:
-  needs: build  # Deploy only if build succeeds
-  runs-on: ubuntu-latest
-  steps:
-    # 1. Checkout repository (needed for deployment)
-    - name: Checkout repository
-      uses: actions/checkout@v2
+    needs: build  # Deploy only if build succeeds
+    runs-on: ubuntu-latest
+    steps:
+      # 1. Checkout repository (needed for deployment)
+      - name: Checkout repository
+        uses: actions/checkout@v2
 
-    # 2. Install Railway CLI and deploy
-    - name: Deploy to Railway
-      env:
-        RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-      run: |
-        npm install -g @railway/cli
-        railway up -- --token $RAILWAY_TOKEN
-      working-directory: "Back End"
+      # 2. Install Railway CLI and deploy
+      - name: Deploy to Railway
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: |
+          npm install -g @railway/cli
+          railway up -- --token $RAILWAY_TOKEN
+        working-directory: "Back End"
