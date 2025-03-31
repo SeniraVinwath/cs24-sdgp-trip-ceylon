@@ -12,42 +12,47 @@ jobs:
     steps:
       # 1. Checkout repository
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       # 2. Setup Node.js (use version 18)
       - name: Setup Node.js
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v3
         with:
           node-version: '18.x'
+          cache: 'npm'
+          cache-dependency-path: 'Back-End/package-lock.json'
 
       # 3. Install Node.js dependencies
       - name: Install Node.js dependencies
-        run: npm install
-        working-directory: "Back End"
+        run: npm ci
+        working-directory: "Back-End"
 
       # 4. Setup Python
       - name: Setup Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
-          python-version: '3.x'
+          python-version: '3.10'
+          cache: 'pip'
+          cache-dependency-path: 'Back-End/itinerary/requirements.txt'
 
       # 5. Install Python dependencies
       - name: Install Python dependencies
         run: pip install -r requirements.txt
-        working-directory: "Back End/itinerary"
+        working-directory: "Back-End/itinerary"
 
       # 6. Run Node.js tests
       - name: Run Tests
         run: npm test
-        working-directory: "Back End"
+        working-directory: "Back-End"
 
   deploy:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: build  # Deploy only if build succeeds
     runs-on: ubuntu-latest
     steps:
       # 1. Checkout repository (needed for deployment)
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       # 2. Install Railway CLI and deploy
       - name: Deploy to Railway
@@ -55,5 +60,5 @@ jobs:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
         run: |
           npm install -g @railway/cli
-          railway up -- --token $RAILWAY_TOKEN --detach
-        working-directory: "Back End"
+          railway up --service=backend --token "$RAILWAY_TOKEN" --detach
+        working-directory: "Back-End"
