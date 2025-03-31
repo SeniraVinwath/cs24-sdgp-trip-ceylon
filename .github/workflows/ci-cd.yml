@@ -3,14 +3,14 @@ name: CI/CD Pipeline
 on:
   push:
     branches: [ "master" ]
-    pull_request:
-      branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      # 1. Checkout your repository
+      # 1. Checkout repository
       - name: Checkout repository
         uses: actions/checkout@v2
 
@@ -31,24 +31,29 @@ jobs:
         with:
           python-version: '3.x'
 
-      # 5. Install Python dependencies (from itinerary/requirements.txt)
+      # 5. Install Python dependencies
       - name: Install Python dependencies
-        run: |
-          cd "Back End/itinerary"
-          pip install -r requirements.txt
+        run: pip install -r requirements.txt
+        working-directory: "Back End/itinerary"
 
       # 6. Run Node.js tests
       - name: Run Tests
-        run: |
-          cd "Back End"
-          npm test
+        run: npm test
+        working-directory: "Back End"
 
   deploy:
-      7. Deploy using Railway or another service
+    needs: build  # Deploy only if build succeeds
+    runs-on: ubuntu-latest
+    steps:
+      # 1. Checkout repository (needed for deployment)
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      # 2. Install Railway CLI and deploy
       - name: Deploy to Railway
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
         run: |
           npm install -g railway
-          cd "Back End"
           railway up --token $RAILWAY_TOKEN --detach
+        working-directory: "Back End"
